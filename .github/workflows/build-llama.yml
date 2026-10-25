@@ -1,0 +1,68 @@
+name: Build llama.cpp (CUDA, T4)
+
+# מקמפל את llama.cpp עם CUDA בתוך קונטיינר של NVIDIA (יש בו את כל ה-Toolkit)
+# ומפרסם את התוצאה כ-Release. Kaggle רק מוריד את הקבצים המוכנים.
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    container:
+      image: nvidia/cuda:12.8.1-devel-ubuntu24.04
+    steps:
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y git cmake build-essential libssl-dev curl ca-certificates
+
+      - name: Clone llama.cpp
+        run: git clone --depth 1 https://github.com/ggml-org/llama.cpp
+
+      - name: Configure
+        run: |
+          cmake -S llama.cpp -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DGGML_CUDA=ON \
+            -DGGML_CUDA_NO_VMM=ON \
+            -DCMAKE_CUDA_ARCHITECTURES=75 \
+            -DGGML_NATIVE=OFF \
+            -DGGML_AVX2=ON -DGGML_FMA=ON -DGGML_F16C=ON -DGGML_BMI2=ON \
+            -DLLAMA_BUILD_TESTS=OFF \
+            -DLLAMA_BUILD_EXAMPLES=OFF
+
+      - name: Build llama-server
+        run: cmake --build build --config Release -j "$(nproc)" --target llama-server
+
+      - name: Package
+        run: |
+          mkdir dist
+          cp -a build/bin/. dist/
+          echo "--- ldd (חסרים בלבד) ---"
+          ldd dist/llama-server | grep "not found" || true
+          tar czf llama-bin.tar.gz -C dist .
+          ls -lh llama-bin.tar.gz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: llama-bin
+          path: llama-bin.tar.gz
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: llama-bin
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: llama-cuda12-sm75
+          name: llama.cpp CUDA 12.8 build (T4 / sm75)
+          body: Prebuilt llama-server for Kaggle T4 GPUs. Built by the build-llama workflow.
+          files: llama-bin.tar.gz

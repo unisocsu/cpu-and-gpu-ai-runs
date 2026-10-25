@@ -1,0 +1,104 @@
+name: Run on Kaggle
+
+# שולח משימה ל-Kaggle (GPU), ממתין לסיום ומחזיר את התשובה.
+# שים לב: הריפו ציבורי, ולכן ה-prompt והתשובה גלויים לכולם בלוג של ההרצה.
+on:
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: "ההודעה למודל"
+        required: true
+        type: string
+      system:
+        description: "הודעת system"
+        required: false
+        default: "אתה עוזר מועיל. ענה בעברית ברורה."
+        type: string
+      model_repo:
+        description: "ריפו ה-GGUF ב-Hugging Face"
+        required: false
+        default: "unsloth/Qwen3.6-35B-A3B-GGUF"
+        type: string
+      model_pattern:
+        description: "תבנית קובץ הכימות"
+        required: false
+        default: "*UD-Q4_K_M*"
+        type: string
+      max_tokens:
+        description: "מקסימום טוקנים בתשובה"
+        required: false
+        default: "1024"
+        type: string
+      thinking:
+        description: "מצב חשיבה (reasoning) למודל"
+        required: false
+        default: false
+        type: boolean
+      accelerator:
+        description: "מזהה ה-GPU ב-Kaggle (NvidiaTeslaT4 או NvidiaTeslaT4Highmem)"
+        required: false
+        default: "NvidiaTeslaT4"
+        type: string
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Kaggle CLI
+        run: pip install -q kaggle
+
+      - name: Push kernel to Kaggle
+        id: push
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+          IN_PROMPT: ${{ inputs.prompt }}
+          IN_SYSTEM: ${{ inputs.system }}
+          IN_MODEL_REPO: ${{ inputs.model_repo }}
+          IN_MODEL_PATTERN: ${{ inputs.model_pattern }}
+          IN_MAX_TOKENS: ${{ inputs.max_tokens }}
+          IN_THINKING: ${{ inputs.thinking }}
+          IN_ACCELERATOR: ${{ inputs.accelerator }}
+          RELEASE_REPO: ${{ github.repository }}
+        run: python scripts/push_to_kaggle.py
+
+      - name: Wait for Kaggle run
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+          KERNEL_REF: ${{ steps.push.outputs.ref }}
+        run: python scripts/wait_kaggle.py
+
+      - name: Download output
+        if: always() && steps.push.outputs.ref != ''
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+          KERNEL_REF: ${{ steps.push.outputs.ref }}
+        run: |
+          mkdir -p out
+          kaggle kernels output "$KERNEL_REF" -p out || true
+          ls -la out
+
+      - name: Show result
+        if: always()
+        run: |
+          {
+            echo "## תשובת המודל"
+            echo
+            if [ -f out/result.txt ]; then cat out/result.txt; else echo "אין result.txt, בדוק את הלוג (out/*.log) ב-artifact."; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kaggle-output
+          path: out/
+          if-no-files-found: ignore
