@@ -6,8 +6,52 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 
-SLUG = "llm-runner"
+BASE_SLUG = "llm-runner"
+
+
+def run(cmd):
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    out = (res.stdout or "") + (res.stderr or "")
+    print(out.strip(), flush=True)
+    return res.returncode, out
+
+
+def build_dir(user: str, slug: str, job: dict) -> pathlib.Path:
+    push_dir = pathlib.Path("/tmp/kaggle-push")
+    shutil.rmtree(push_dir, ignore_errors=True)
+    push_dir.mkdir(parents=True)
+
+    src = pathlib.Path("kaggle/runner.py").read_text(encoding="utf-8")
+    (push_dir / "runner.py").write_text("JOB = " + repr(job) + "\n\n" + src, encoding="utf-8")
+
+    meta = {
+        "id": f"{user}/{slug}",
+        "title": slug,
+        "code_file": "runner.py",
+        "language": "python",
+        "kernel_type": "script",
+        "is_private": "true",
+        "enable_gpu": "true",
+        "enable_internet": "true",
+        "dataset_sources": [],
+        "competition_sources": [],
+        "kernel_sources": [],
+        "model_sources": [],
+    }
+    (push_dir / "kernel-metadata.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
+    return push_dir
+
+
+def push(user: str, slug: str, job: dict):
+    push_dir = build_dir(user, slug, job)
+    cmd = ["kaggle", "kernels", "push", "-p", str(push_dir)]
+    acc = os.environ.get("IN_ACCELERATOR", "").strip()
+    if acc:
+        cmd += ["--accelerator", acc]
+    print("Running:", " ".join(cmd), flush=True)
+    return run(cmd)
 
 
 def main() -> None:
@@ -22,54 +66,39 @@ def main() -> None:
         "release_repo": os.environ["RELEASE_REPO"],
     }
 
-    push_dir = pathlib.Path("/tmp/kaggle-push")
-    shutil.rmtree(push_dir, ignore_errors=True)
-    push_dir.mkdir(parents=True)
+    # אבחון: מה המצב הנוכחי של ה-Kernel הקיים (אם יש)
+    print("--- מצב נוכחי של ה-Kernel ---", flush=True)
+    run(["kaggle", "kernels", "status", f"{user}/{BASE_SLUG}"])
+    print("-----------------------------", flush=True)
 
-    src = pathlib.Path("kaggle/runner.py").read_text(encoding="utf-8")
-    (push_dir / "runner.py").write_text("JOB = " + repr(job) + "\n\n" + src, encoding="utf-8")
+    code, out = push(user, BASE_SLUG, job)
 
-    meta = {
-        "id": f"{user}/{SLUG}",
-        "title": SLUG,
-        "code_file": "runner.py",
-        "language": "python",
-        "kernel_type": "script",
-        "is_private": "true",
-        "enable_gpu": "true",
-        "enable_internet": "true",
-        "dataset_sources": [],
-        "competition_sources": [],
-        "kernel_sources": [],
-        "model_sources": [],
-    }
-    (push_dir / "kernel-metadata.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
+    if code != 0 and "409" in out:
+        print("409 Conflict. כנראה ההרצה הקודמת עדיין פעילה. מחכה דקה ומנסה שוב...", flush=True)
+        time.sleep(60)
+        code, out = push(user, BASE_SLUG, job)
 
-    cmd = ["kaggle", "kernels", "push", "-p", str(push_dir)]
-    acc = os.environ.get("IN_ACCELERATOR", "").strip()
-    if acc:
-        cmd += ["--accelerator", acc]
-    print("Running:", " ".join(cmd), flush=True)
-    res = subprocess.run(cmd, capture_output=True, text=True)
-    print(res.stdout)
-    print(res.stderr, file=sys.stderr)
-    if res.returncode != 0:
-        sys.exit(res.returncode)
+    if code != 0 and "409" in out:
+        fallback = f"{BASE_SLUG}-{os.environ.get('GITHUB_RUN_ID', int(time.time()))}"
+        print(f"עדיין 409. מנסה Kernel חדש בשם {fallback}", flush=True)
+        code, out = push(user, fallback, job)
 
-    # ה-ref האמיתי של ה-Kernel נלקח מה-URL ש-Kaggle מחזיר (לא מההנחה ששם המשתמש תקין)
-    m = re.search(r"kaggle\.com/code/([^/\s]+)/([^/\s?#]+)", res.stdout + res.stderr)
-    ref = f"{m.group(1)}/{m.group(2)}" if m else f"{user}/{SLUG}"
+    if code != 0:
+        sys.exit(
+            "\nהדחיפה ל-Kaggle נכשלה. בדוק ב-kaggle.com/code (Your Work) אם יש מחברת llm-runner "
+            "שרצה כרגע, ושהערך של KAGGLE_USERNAME זהה לשם המשתמש ב-URL של המחברות."
+        )
+
+    # ה-ref האמיתי של ה-Kernel נלקח מה-URL ש-Kaggle מחזיר
+    m = re.search(r"kaggle\.com/code/([^/\s]+)/([^/\s?#]+)", out)
+    ref = f"{m.group(1)}/{m.group(2)}" if m else f"{user}/{BASE_SLUG}"
     print("Kernel ref:", ref)
 
     gh_out = os.environ.get("GITHUB_OUTPUT")
     if gh_out:
         with open(gh_out, "a", encoding="utf-8") as f:
             f.write(f"ref={ref}\n")
-    print("Pushed:", ref)
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except subprocess.CalledProcessError as e:
-        sys.exit(e.returncode)
+    main()
