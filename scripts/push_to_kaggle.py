@@ -2,6 +2,7 @@
 import json
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -49,9 +50,17 @@ def main() -> None:
     if acc:
         cmd += ["--accelerator", acc]
     print("Running:", " ".join(cmd), flush=True)
-    subprocess.run(cmd, check=True)
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    print(res.stdout)
+    print(res.stderr, file=sys.stderr)
+    if res.returncode != 0:
+        sys.exit(res.returncode)
 
-    ref = f"{user}/{SLUG}"
+    # ה-ref האמיתי של ה-Kernel נלקח מה-URL ש-Kaggle מחזיר (לא מההנחה ששם המשתמש תקין)
+    m = re.search(r"kaggle\.com/code/([^/\s]+)/([^/\s?#]+)", res.stdout + res.stderr)
+    ref = f"{m.group(1)}/{m.group(2)}" if m else f"{user}/{SLUG}"
+    print("Kernel ref:", ref)
+
     gh_out = os.environ.get("GITHUB_OUTPUT")
     if gh_out:
         with open(gh_out, "a", encoding="utf-8") as f:
