@@ -6,7 +6,7 @@
 
 1. **Secrets בריפו** (Settings → Secrets and variables → Actions):
    - `KAGGLE_USERNAME` – שם המשתמש שלך ב-Kaggle
-   - `KAGGLE_KEY` – מפתח ה-API (kaggle.com → Settings → API → Create New Token)
+   - `KAGGLE_API_TOKEN` – אסימון ה-API (kaggle.com/settings/api → Generate New Token, מוצג פעם אחת)
 2. ב-Kaggle: אימות טלפון בחשבון (בלי זה אין GPU).
 3. Actions → **Build llama.cpp (CUDA, T4)** → Run workflow (כ-10-20 דקות, פעם אחת).
 
