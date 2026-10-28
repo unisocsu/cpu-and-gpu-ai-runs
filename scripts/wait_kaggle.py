@@ -16,7 +16,10 @@ def status() -> str:
 
 
 def is_denied(s: str) -> bool:
-    return "denied" in s or "cannot access" in s or "401" in s or "403" in s
+    # תשובה תקינה מכילה "has status", ושם ה-Kernel עלול להכיל מספרים, לכן לא מחפשים קודי HTTP
+    if "has status" in s:
+        return False
+    return "denied" in s or "cannot access" in s or "unauthorized" in s or "forbidden" in s
 
 
 def fail_denied(s: str) -> None:
