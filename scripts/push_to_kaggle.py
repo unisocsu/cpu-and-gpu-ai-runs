@@ -8,7 +8,8 @@ import subprocess
 import sys
 import time
 
-BASE_SLUG = "llm-runner"
+TASK_SLUG = "llm-runner"
+WORKER_SLUG = "llm-worker"
 
 
 def run(cmd):
@@ -56,8 +57,11 @@ def push(user: str, slug: str, job: dict):
 
 def main() -> None:
     user = os.environ["KAGGLE_USERNAME"]
+    mode = os.environ.get("IN_MODE", "task")
+    base_slug = WORKER_SLUG if mode == "worker" else TASK_SLUG
     job = {
-        "prompt": os.environ["IN_PROMPT"],
+        "mode": mode,
+        "prompt": os.environ.get("IN_PROMPT", ""),
         "system": os.environ.get("IN_SYSTEM", ""),
         "model_repo": os.environ["IN_MODEL_REPO"],
         "model_pattern": os.environ["IN_MODEL_PATTERN"],
@@ -65,21 +69,28 @@ def main() -> None:
         "thinking": os.environ.get("IN_THINKING", "false").lower() == "true",
         "release_repo": os.environ["RELEASE_REPO"],
     }
+    if mode == "worker":
+        job.update({
+            "gh_token": os.environ["GH_TOKEN"],
+            "gh_owner": os.environ["GH_OWNER"],
+            "idle_minutes": float(os.environ.get("IN_IDLE_MINUTES") or 30),
+            "max_hours": 5.2,
+        })
 
     # אבחון: מה המצב הנוכחי של ה-Kernel הקיים (אם יש)
     print("--- מצב נוכחי של ה-Kernel ---", flush=True)
-    run(["kaggle", "kernels", "status", f"{user}/{BASE_SLUG}"])
+    run(["kaggle", "kernels", "status", f"{user}/{base_slug}"])
     print("-----------------------------", flush=True)
 
-    code, out = push(user, BASE_SLUG, job)
+    code, out = push(user, base_slug, job)
 
     if code != 0 and "409" in out:
         print("409 Conflict. כנראה ההרצה הקודמת עדיין פעילה. מחכה דקה ומנסה שוב...", flush=True)
         time.sleep(60)
-        code, out = push(user, BASE_SLUG, job)
+        code, out = push(user, base_slug, job)
 
     if code != 0 and "409" in out:
-        fallback = f"{BASE_SLUG}-{os.environ.get('GITHUB_RUN_ID', int(time.time()))}"
+        fallback = f"{base_slug}-{os.environ.get('GITHUB_RUN_ID', int(time.time()))}"
         print(f"עדיין 409. מנסה Kernel חדש בשם {fallback}", flush=True)
         code, out = push(user, fallback, job)
 
@@ -91,7 +102,7 @@ def main() -> None:
 
     # ה-ref האמיתי של ה-Kernel נלקח מה-URL ש-Kaggle מחזיר
     m = re.search(r"kaggle\.com/code/([^/\s]+)/([^/\s?#]+)", out)
-    ref = f"{m.group(1)}/{m.group(2)}" if m else f"{user}/{BASE_SLUG}"
+    ref = f"{m.group(1)}/{m.group(2)}" if m else f"{user}/{base_slug}"
     print("Kernel ref:", ref)
 
     gh_out = os.environ.get("GITHUB_OUTPUT")

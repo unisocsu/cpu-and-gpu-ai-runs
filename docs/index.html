@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>צ'אט מודל על Kaggle</title>
+<style>
+:root{
+  --bg:#0f1115; --panel:#161922; --panel2:#1d212c; --line:#2a2f3d; --text:#e8eaf0; --muted:#8b92a5;
+  --accent:#6c8cff; --accent2:#4f6ae0; --user:#25304f; --ok:#3ecf8e; --bad:#ff6b6b; --code:#0b0d12;
+}
+@media (prefers-color-scheme: light){
+  :root{ --bg:#f5f6fa; --panel:#ffffff; --panel2:#eef0f6; --line:#d9dce6; --text:#1b1e27; --muted:#667085;
+         --accent:#3b5bdb; --accent2:#2f49b3; --user:#dfe7ff; --code:#f1f3f9; }
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.6 system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+     padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+button{font:inherit;color:inherit;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button.primary:hover{background:var(--accent2)}
+button:disabled{opacity:.5;cursor:default}
+#app{display:grid;grid-template-columns:270px 1fr;height:100%}
+#side{background:var(--panel);border-inline-end:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+#side header{padding:12px;display:flex;gap:8px;align-items:center;border-bottom:1px solid var(--line)}
+#side header h1{font-size:16px;margin:0;flex:1}
+#list{overflow:auto;flex:1;padding:8px}
+.conv{display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:8px;cursor:pointer}
+.conv:hover{background:var(--panel2)}
+.conv.active{background:var(--user)}
+.conv .t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.conv small{color:var(--muted);display:block}
+.conv .x{opacity:0;padding:0 6px;border:none;background:none;color:var(--muted)}
+.conv:hover .x{opacity:1}
+#main{display:flex;flex-direction:column;min-width:0;min-height:0}
+#top{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--panel)}
+#top .sp{flex:1}
+#menu{display:none}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:99px;background:var(--panel2);border:1px solid var(--line);font-size:13px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--bad)}
+.badge.on .dot{background:var(--ok)}
+#chat{flex:1;overflow:auto;padding:18px 14px;min-height:0}
+.wrap{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.msg{padding:10px 14px;border-radius:14px;max-width:100%;overflow-wrap:anywhere}
+.msg.user{background:var(--user);align-self:flex-start;border-end-start-radius:4px}
+.msg.assistant{background:var(--panel);border:1px solid var(--line);border-end-end-radius:4px}
+.msg.tmp{opacity:.6}
+.meta{color:var(--muted);font-size:12px;margin-top:6px}
+.md>:first-child{margin-top:0}.md>:last-child{margin-bottom:0}
+.md p{margin:.5em 0}.md ul,.md ol{margin:.5em 0;padding-inline-start:1.4em}
+.md h3,.md h4,.md h5,.md h6{margin:.8em 0 .3em}
+.md blockquote{margin:.5em 0;padding:2px 12px;border-inline-start:3px solid var(--line);color:var(--muted)}
+.md code{background:var(--code);padding:1px 5px;border-radius:5px;font-family:ui-monospace,Consolas,monospace;font-size:.9em;direction:ltr;unicode-bidi:embed}
+.md a{color:var(--accent)}
+.code{margin:.6em 0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--code)}
+.code .bar{display:flex;gap:6px;align-items:center;padding:4px 8px;background:var(--panel2);font-size:12px;color:var(--muted)}
+.code .bar span{flex:1;direction:ltr;text-align:left}
+.code .bar button{padding:2px 8px;font-size:12px}
+.code pre{margin:0;padding:10px 12px;overflow:auto;max-height:480px;direction:ltr;text-align:left}
+.code pre code{background:none;padding:0;font-size:13px;white-space:pre}
+.code iframe{width:100%;height:420px;border:0;border-top:1px solid var(--line);background:#fff}
+details.think{margin-top:8px;color:var(--muted);font-size:13px}
+details.think div{white-space:pre-wrap;margin-top:4px}
+.typing{color:var(--muted);align-self:flex-start;font-size:14px}
+.empty{color:var(--muted);text-align:center;margin-top:12vh}
+.empty h2{color:var(--text)}
+#composer{padding:10px 14px;border-top:1px solid var(--line);background:var(--panel)}
+#composer .row{max-width:860px;margin:0 auto;display:flex;gap:8px;align-items:flex-end}
+textarea{flex:1;resize:none;max-height:200px;background:var(--panel2);color:var(--text);border:1px solid var(--line);
+         border-radius:12px;padding:10px 12px;font:inherit;outline:none}
+textarea:focus{border-color:var(--accent)}
+.hint{max-width:860px;margin:4px auto 0;color:var(--muted);font-size:12px}
+#toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:8px 16px;border-radius:99px;
+       opacity:0;pointer-events:none;transition:opacity .25s;z-index:20;max-width:90vw}
+#toast.show{opacity:.95}
+dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:14px;max-width:520px;width:92vw}
+dialog::backdrop{background:rgba(0,0,0,.55)}
+dialog label{display:block;margin:10px 0 4px}
+dialog input{width:100%;padding:8px 10px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;direction:ltr}
+dialog small{color:var(--muted);display:block;margin-top:8px}
+dialog .btns{display:flex;gap:8px;justify-content:flex-start;margin-top:14px}
+@media (max-width:720px){
+  #app{grid-template-columns:1fr}
+  #side{position:fixed;inset:0 0 0 auto;width:82vw;max-width:320px;z-index:10;transform:translateX(100%);transition:transform .2s}
+  #side.open{transform:none}
+  #menu{display:inline-block}
+}
+</style>
+</head>
+<body>
+<noscript>הדף דורש JavaScript.</noscript>
+<div id="app">
+  <aside id="side">
+    <header>
+      <h1>שיחות</h1>
+      <button id="newChat" class="primary">+ חדשה</button>
+    </header>
+    <div id="list"></div>
+  </aside>
+  <section id="main">
+    <div id="top">
+      <button id="menu" aria-label="תפריט">☰</button>
+      <span class="badge" id="workerBadge"><span class="dot"></span><span id="workerText">בודק…</span></span>
+      <button id="workerBtn">הפעל Worker</button>
+      <span class="sp"></span>
+      <button id="settingsBtn" aria-label="הגדרות">⚙️</button>
+    </div>
+    <div id="chat"><div class="wrap" id="msgs"></div></div>
+    <div id="composer">
+      <div class="row">
+        <textarea id="input" rows="1" placeholder="כתוב הודעה… (Enter לשליחה, Shift+Enter לשורה חדשה)"></textarea>
+        <button id="send" class="primary">שלח</button>
+      </div>
+      <div class="hint">הקידומת <code>/think</code> בתחילת הודעה מפעילה מצב חשיבה. השיחה נשמרת כ-Issue בריפו הציבורי.</div>
+    </div>
+  </section>
+</div>
+
+<dialog id="settings">
+  <h3 style="margin-top:0">הגדרות</h3>
+  <label for="repoIn">ריפו (owner/name)</label>
+  <input id="repoIn" placeholder="owner/repo" autocomplete="off">
+  <label for="tokenIn">GitHub token</label>
+  <input id="tokenIn" type="password" placeholder="github_pat_…" autocomplete="off">
+  <small>
+    צור Fine-grained token ל<b>ריפו הזה בלבד</b> (github.com/settings/personal-access-tokens/new) עם הרשאות:
+    Issues: Read and write, Actions: Read and write, Metadata: Read.
+    הוא נשמר רק בדפדפן הזה (localStorage). שים לב: הריפו ציבורי, ולכן כל השיחה גלויה לכולם.
+  </small>
+  <div class="btns">
+    <button id="saveSettings" class="primary">שמור</button>
+    <button id="closeSettings">סגור</button>
+  </div>
+</dialog>
+<div id="toast"></div>
+
+<script>
+'use strict';
+const MARKER = '<!--llm-reply-->';
+const STATUS_TITLE = '[worker-status]';
+const $ = (s, el = document) => el.querySelector(s);
+
+const store = {
+  get(k, d = '') { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+};
+function guessRepo() {
+  const h = location.hostname;
+  if (h.endsWith('.github.io')) {
+    const repo = location.pathname.split('/').filter(Boolean)[0];
+    if (repo) return h.split('.')[0] + '/' + repo;
+  }
+  return '';
+}
+
+const S = {
+  repo: store.get('repo', guessRepo()),
+  token: store.get('token', ''),
+  issue: null, issues: [], comments: [], pending: [],
+  etagC: null, etagI: null, lastKey: '',
+  worker: { no: null, state: '', ts: 0, online: false },
+  sending: false, branch: null, timer: null,
+};
+const owner = () => (S.repo.split('/')[0] || '');
+const repoPath = p => `/repos/${S.repo}${p}`;
+
+/* ---------------------------------------------------------------- GitHub API */
+async function gh(method, path, body, etag) {
+  const headers = { Accept: 'application/vnd.github+json' };
+  if (S.token) headers.Authorization = 'Bearer ' + S.token;
+  if (body) headers['Content-Type'] = 'application/json';
+  if (etag) headers['If-None-Match'] = etag;
+  const res = await fetch('https://api.github.com' + path, { method, headers, body: body ? JSON.stringify(body) : undefined });
+  if (res.status === 304) return { status: 304 };
+  let data = null;
+  try { data = await res.json(); } catch (e) {}
+  return { status: res.status, data, etag: res.headers.get('ETag') };
+}
+
+/* ---------------------------------------------------------------- Markdown */
+function inline(s) {
+  const f = document.createDocumentFragment();
+  const re = /`([^`]+)`|\*\*([^*]+)\*\*|\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s<]+)/g;
+  let last = 0, m;
+  while ((m = re.exec(s))) {
+    if (m.index > last) f.append(s.slice(last, m.index));
+    if (m[1] !== undefined) { const c = document.createElement('code'); c.textContent = m[1]; f.append(c); }
+    else if (m[2] !== undefined) { const b = document.createElement('strong'); b.textContent = m[2]; f.append(b); }
+    else {
+      const a = document.createElement('a');
+      a.href = m[4] || m[5]; a.textContent = m[3] || m[5]; a.target = '_blank'; a.rel = 'noopener noreferrer';
+      f.append(a);
+    }
+    last = re.lastIndex;
+  }
+  if (last < s.length) f.append(s.slice(last));
+  return f;
+}
+
+function blocks(t) {
+  const els = [];
+  let para = [], list = null;
+  const flushP = () => {
+    if (!para.length) return;
+    const p = document.createElement('p');
+    para.forEach((l, i) => { if (i) p.append(document.createElement('br')); p.append(inline(l)); });
+    els.push(p); para = [];
+  };
+  const flushL = () => { if (list) { els.push(list); list = null; } };
+  for (const line of t.split('\n')) {
+    let m;
+    if (!line.trim()) { flushP(); flushL(); continue; }
+    if (/^(-{3,}|\*{3,})$/.test(line.trim())) { flushP(); flushL(); els.push(document.createElement('hr')); continue; }
+    if ((m = line.match(/^(#{1,4})\s+(.*)$/))) {
+      flushP(); flushL();
+      const h = document.createElement('h' + Math.min(m[1].length + 2, 6)); h.append(inline(m[2])); els.push(h); continue;
+    }
+    if ((m = line.match(/^\s*([-*]|\d+[.)])\s+(.*)$/))) {
+      flushP();
+      const tag = /\d/.test(m[1]) ? 'ol' : 'ul';
+      if (!list || list.tagName.toLowerCase() !== tag) { flushL(); list = document.createElement(tag); }
+      const li = document.createElement('li'); li.append(inline(m[2])); list.append(li); continue;
+    }
+    if ((m = line.match(/^>\s?(.*)$/))) {
+      flushP(); flushL();
+      const q = document.createElement('blockquote'); q.append(inline(m[1])); els.push(q); continue;
+    }
+    flushL(); para.push(line);
+  }
+  flushP(); flushL();
+  return els;
+}
+
+const EXT = { html: 'html', htm: 'html', css: 'css', js: 'js', javascript: 'js', jsx: 'jsx', ts: 'ts', typescript: 'ts',
+  python: 'py', py: 'py', java: 'java', kotlin: 'kt', bash: 'sh', sh: 'sh', shell: 'sh', json: 'json', yaml: 'yml',
+  yml: 'yml', xml: 'xml', sql: 'sql', c: 'c', cpp: 'cpp', 'c++': 'cpp', go: 'go', rust: 'rs', php: 'php', md: 'md' };
+
+function download(name, text) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
+  a.download = name;
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+function codeBlock(lang, code, complete) {
+  const box = document.createElement('div'); box.className = 'code';
+  const bar = document.createElement('div'); bar.className = 'bar';
+  const label = document.createElement('span'); label.textContent = (lang || 'code') + (complete ? '' : ' (חלקי)');
+  bar.append(label);
+  const mk = (txt, fn) => { const b = document.createElement('button'); b.textContent = txt; b.addEventListener('click', fn); bar.append(b); return b; };
+  mk('העתק', async e => {
+    try { await navigator.clipboard.writeText(code); e.target.textContent = 'הועתק ✓'; setTimeout(() => (e.target.textContent = 'העתק'), 1500); }
+    catch (err) { toast('ההעתקה נחסמה בדפדפן'); }
+  });
+  const ext = EXT[(lang || '').toLowerCase()] || 'txt';
+  mk('הורד', () => download(ext === 'html' ? 'index.html' : 'code.' + ext, code));
+  if (ext === 'html') {
+    let frame = null;
+    mk('תצוגה מקדימה', () => {
+      if (frame) { frame.remove(); frame = null; return; }
+      frame = document.createElement('iframe');
+      frame.setAttribute('sandbox', 'allow-scripts');   // בלי allow-same-origin: אין גישה ל-localStorage או לטוקן
+      frame.setAttribute('referrerpolicy', 'no-referrer');
+      frame.srcdoc = code;
+      box.append(frame);
+    });
+  }
+  const pre = document.createElement('pre'); const c = document.createElement('code'); c.textContent = code; pre.append(c);
+  box.append(bar, pre);
+  return box;
+}
+
+function renderMd(text) {
+  const root = document.createElement('div'); root.className = 'md';
+  const re = /```([\w+#.-]*)[^\n]*\n([\s\S]*?)(```|$)/g;
+  let last = 0, m;
+  while ((m = re.exec(text))) {
+    if (m.index > last) root.append(...blocks(text.slice(last, m.index)));
+    root.append(codeBlock(m[1], m[2].replace(/\n$/, ''), m[3] === '```'));
+    last = re.lastIndex;
+    if (re.lastIndex === m.index) re.lastIndex++;
+  }
+  if (last < text.length) root.append(...blocks(text.slice(last)));
+  return root;
+}
+
+/* ---------------------------------------------------------------- Messages */
+function parseReply(t) {
+  let meta = '', think = '';
+  t = t.replace(/\n*<sub>([\s\S]*?)<\/sub>\s*$/, (m, g) => { meta = g; return ''; });
+  t = t.replace(/<details><summary>[\s\S]*?<\/summary>([\s\S]*?)<\/details>/, (m, g) => { think = g.trim(); return ''; });
+  return { text: t.trim(), meta, think };
+}
+
+function toMessages(list) {
+  const out = [];
+  for (const c of list) {
+    const b = c.body || '';
+    if (b.startsWith(MARKER)) out.push({ role: 'assistant', id: c.id, ...parseReply(b.slice(MARKER.length)) });
+    else if (((c.user && c.user.login) || '').toLowerCase() === owner().toLowerCase()) out.push({ role: 'user', id: c.id, text: b, tmp: !!c.tmp });
+  }
+  return out;
+}
+
+function msgEl(m) {
+  const d = document.createElement('div');
+  d.className = 'msg ' + m.role + (m.tmp ? ' tmp' : '');
+  if (m.role === 'user') { d.dir = 'auto'; d.style.whiteSpace = 'pre-wrap'; d.textContent = m.text; return d; }
+  const body = renderMd(m.text); body.dir = 'auto'; d.append(body);
+  if (m.think) {
+    const dt = document.createElement('details'); dt.className = 'think';
+    const sm = document.createElement('summary'); sm.textContent = 'חשיבה';
+    const dv = document.createElement('div'); dv.textContent = m.think; dv.dir = 'auto';
+    dt.append(sm, dv); d.append(dt);
+  }
+  if (m.meta) { const mt = document.createElement('div'); mt.className = 'meta'; mt.textContent = m.meta.replace(/\s+/g, ' ').trim(); d.append(mt); }
+  return d;
+}
+
+function renderChat(forceScroll) {
+  const all = S.comments.concat(S.pending);
+  const key = (S.issue ? S.issue.number : 0) + '|' + all.map(c => c.id + ':' + (c.body || '').length).join(',') + '|' + S.worker.online;
+  if (key === S.lastKey && !forceScroll) return;
+  S.lastKey = key;
+  const box = $('#chat');
+  const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
+  const wrap = $('#msgs'); wrap.textContent = '';
+  const msgs = toMessages(all);
+  if (!S.issue && !msgs.length) {
+    const e = document.createElement('div'); e.className = 'empty';
+    e.innerHTML = '<h2>צ\'אט עם מודל על Kaggle</h2><div>כתוב הודעה כדי להתחיל שיחה חדשה.<br>אם ה-Worker כבוי, לחץ "הפעל Worker" (לוקח כמה דקות).</div>';
+    wrap.append(e);
+  }
+  msgs.forEach(m => wrap.append(msgEl(m)));
+  if (msgs.length && msgs[msgs.length - 1].role === 'user') {
+    const t = document.createElement('div'); t.className = 'typing';
+    t.textContent = S.worker.online ? '⏳ המודל חושב…' : '💤 ה-Worker כבוי. ההודעה תיענה כשיופעל.';
+    wrap.append(t);
+  }
+  if (forceScroll || nearBottom) box.scrollTop = box.scrollHeight;
+}
+
+/* ---------------------------------------------------------------- Issues list */
+const fmt = iso => new Date(iso).toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'short' });
+
+function renderIssues() {
+  const list = $('#list'); list.textContent = '';
+  S.issues.forEach(i => {
+    const row = document.createElement('div');
+    row.className = 'conv' + (S.issue && S.issue.number === i.number ? ' active' : '');
+    const t = document.createElement('div'); t.className = 't';
+    const title = document.createElement('div'); title.textContent = i.title; title.dir = 'auto';
+    const sm = document.createElement('small'); sm.textContent = fmt(i.updated_at);
+    t.append(title, sm);
+    const x = document.createElement('button'); x.className = 'x'; x.textContent = '✕'; x.title = 'ארכיון';
+    x.addEventListener('click', async e => {
+      e.stopPropagation();
+      if (!confirm('להעביר את השיחה לארכיון?')) return;
+      const r = await gh('PATCH', repoPath('/issues/' + i.number), { state: 'closed' });
+      if (r.status !== 200) return toast('הפעולה נכשלה (' + r.status + ')');
+      S.issues = S.issues.filter(z => z.number !== i.number);
+      if (S.issue && S.issue.number === i.number) newChat();
+      renderIssues();
+    });
+    row.append(t, x);
+    row.addEventListener('click', () => openIssue(i));
+    list.append(row);
+  });
+}
+
+async function loadIssues() {
+  if (!S.repo) return;
+  const r = await gh('GET', repoPath('/issues?labels=chat&state=open&per_page=50&sort=updated'), null, S.etagI);
+  if (r.status === 304) return;
+  if (r.status !== 200) { toast(r.status === 404 ? 'הריפו לא נמצא (בדוק הגדרות)' : 'שגיאת GitHub ' + r.status); return; }
+  S.etagI = r.etag;
+  S.issues = r.data.filter(i => !i.pull_request);
+  renderIssues();
+}
+
+function newChat() {
+  S.issue = null; S.comments = []; S.pending = []; S.etagC = null; S.lastKey = '';
+  store.set('issue', ''); renderChat(true); renderIssues(); $('#side').classList.remove('open');
+}
+
+function openIssue(i) {
+  S.issue = i; S.comments = []; S.pending = []; S.etagC = null; S.lastKey = '';
+  store.set('issue', String(i.number));
+  renderChat(true); renderIssues(); $('#side').classList.remove('open');
+  pollComments();
+}
+
+async function pollComments() {
+  if (!S.issue) return;
+  const n = S.issue.number;
+  const r = await gh('GET', repoPath(`/issues/${n}/comments?per_page=100`), null, S.etagC);
+  if (!S.issue || S.issue.number !== n || r.status === 304) return;
+  if (r.status !== 200) return;
+  S.etagC = r.etag;
+  let list = r.data, last = r.data;
+  for (let page = 2; last.length === 100 && page <= 5; page++) {
+    const rr = await gh('GET', repoPath(`/issues/${n}/comments?per_page=100&page=${page}`));
+    if (rr.status !== 200) break;
+    last = rr.data; list = list.concat(last);
+  }
+  S.comments = list;
+  renderChat();
+}
+
+/* ---------------------------------------------------------------- Worker */
+function renderWorker() {
+  const on = S.worker.online;
+  $('#workerBadge').classList.toggle('on', on);
+  $('#workerText').textContent = on ? 'Worker מחובר' : 'Worker כבוי';
+  $('#workerBtn').textContent = on ? 'עצור Worker' : 'הפעל Worker';
+}
+
+async function pollWorker() {
+  if (!S.repo) return;
+  try {
+    if (!S.worker.no) {
+      const r = await gh('GET', repoPath('/issues?state=open&sort=created&direction=asc&per_page=100'));
+      if (r.status === 200) { const it = r.data.find(i => i.title === STATUS_TITLE); if (it) S.worker.no = it.number; }
+    }
+    if (S.worker.no) {
+      const r = await gh('GET', repoPath('/issues/' + S.worker.no));
+      if (r.status === 200) {
+        const m = (r.data.body || '').match(/\{[^{}]*\}/);
+        if (m) { const j = JSON.parse(m[0]); S.worker.state = j.state; S.worker.ts = j.ts; }
+      }
+    }
+  } catch (e) {}
+  S.worker.online = S.worker.state === 'online' && (Date.now() / 1000 - S.worker.ts) < 180;
+  renderWorker();
+}
+
+async function dispatch(workflow) {
+  if (!S.token) { openSettings(); return false; }
+  if (!S.branch) {
+    const r = await gh('GET', repoPath(''));
+    S.branch = (r.data && r.data.default_branch) || 'main';
+  }
+  const r = await gh('POST', repoPath(`/actions/workflows/${workflow}/dispatches`), { ref: S.branch });
+  if (r.status !== 204) { toast('ההפעלה נכשלה (' + r.status + '). בדוק הרשאת Actions בטוקן.'); return false; }
+  return true;
+}
+
+async function toggleWorker() {
+  if (S.worker.online) {
+    if (await dispatch('stop-worker.yml')) toast('בקשת עצירה נשלחה (תיענה תוך כדקה)');
+  } else if (await dispatch('start-worker.yml')) {
+    toast('ההפעלה נשלחה. לוקח בערך 4-6 דקות עד שה-Worker מוכן.');
+    S.fast = Date.now() + 10 * 60 * 1000;
+  }
+}
+
+/* ---------------------------------------------------------------- Sending */
+function autosize() { const t = $('#input'); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 200) + 'px'; }
+
+async function send() {
+  const text = $('#input').value.trim();
+  if (!text || S.sending) return;
+  if (!S.token || !S.repo) { openSettings(); return; }
+  S.sending = true; $('#send').disabled = true;
+  let cleared = false;
+  try {
+    if (!S.issue) {
+      const r = await gh('POST', repoPath('/issues'), { title: text.slice(0, 60), body: 'שיחה חדשה מהדף', labels: ['chat'] });
+      if (r.status !== 201) throw new Error('יצירת שיחה נכשלה (' + r.status + ')');
+      S.issue = r.data; S.comments = []; S.etagC = null; S.issues.unshift(r.data);
+      store.set('issue', String(r.data.number)); renderIssues();
+    }
+    const tmp = { id: 't' + Date.now(), body: text, user: { login: owner() }, tmp: true };
+    S.pending.push(tmp); $('#input').value = ''; cleared = true; autosize(); renderChat(true);
+    const r = await gh('POST', repoPath(`/issues/${S.issue.number}/comments`), { body: text });
+    S.pending = S.pending.filter(p => p !== tmp);
+    if (r.status !== 201) throw new Error('שליחה נכשלה (' + r.status + ')');
+    if (!S.comments.some(c => c.id === r.data.id)) S.comments.push(r.data);   // ייתכן שה-poll כבר הביא אותה
+    S.etagC = null; renderChat(true);
+  } catch (e) {
+    S.pending = [];
+    if (cleared) $('#input').value = text;
+    renderChat(); toast(e.message);
+  } finally { S.sending = false; $('#send').disabled = false; }
+}
+
+/* ---------------------------------------------------------------- UI plumbing */
+let toastTimer;
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 4000);
+}
+function openSettings() {
+  $('#repoIn').value = S.repo; $('#tokenIn').value = S.token;
+  const d = $('#settings'); if (d.showModal) d.showModal(); else d.setAttribute('open', '');
+}
+function closeSettings() { const d = $('#settings'); if (d.close) d.close(); else d.removeAttribute('open'); }
+
+function bind() {
+  $('#send').addEventListener('click', send);
+  $('#input').addEventListener('input', autosize);
+  $('#input').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); }
+  });
+  $('#newChat').addEventListener('click', newChat);
+  $('#menu').addEventListener('click', () => $('#side').classList.toggle('open'));
+  $('#workerBtn').addEventListener('click', toggleWorker);
+  $('#settingsBtn').addEventListener('click', openSettings);
+  $('#closeSettings').addEventListener('click', closeSettings);
+  $('#saveSettings').addEventListener('click', () => {
+    S.repo = $('#repoIn').value.trim().replace(/^https?:\/\/github\.com\//, '').replace(/\/$/, '');
+    S.token = $('#tokenIn').value.trim();
+    store.set('repo', S.repo); store.set('token', S.token);
+    S.worker = { no: null, state: '', ts: 0, online: false }; S.branch = null; S.etagI = null;
+    closeSettings(); newChat(); boot();
+  });
+}
+
+function schedule() {
+  clearTimeout(S.timer);
+  const waiting = S.pending.length || (S.comments.length && !(S.comments[S.comments.length - 1].body || '').startsWith(MARKER));
+  const fast = S.worker.online && waiting;
+  const delay = document.hidden ? 30000 : fast ? 3000 : 8000;
+  S.timer = setTimeout(async () => { try { await pollComments(); } catch (e) {} schedule(); }, delay);
+}
+
+let tick = 0;
+async function slowLoop() {
+  tick++;
+  try {
+    await pollWorker();
+    if (tick % 2 === 0) await loadIssues();
+  } catch (e) {}
+  const delay = (S.fast && Date.now() < S.fast) ? 10000 : (S.token ? 20000 : 90000);
+  setTimeout(slowLoop, document.hidden ? 60000 : delay);
+}
+
+async function boot() {
+  renderWorker(); renderChat(true);
+  if (!S.repo || !S.token) { openSettings(); }
+  if (!S.repo) return;
+  await loadIssues();
+  const saved = Number(store.get('issue', '0'));
+  const found = S.issues.find(i => i.number === saved);
+  if (found && !S.issue) openIssue(found);
+}
+
+bind(); autosize(); boot(); schedule();
+if (!window.__noLoop) slowLoop();
+</script>
+</body>
+</html>

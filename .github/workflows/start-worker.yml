@@ -1,0 +1,99 @@
+name: Start chat worker
+
+# מפעיל worker קבוע ב-Kaggle שעונה להודעות ב-Issues עם התווית chat.
+# ה-worker נסגר לבד אחרי idle_minutes בלי הודעות, או אחרי כ-5 שעות.
+# הטוקן שהוא מקבל הוא GITHUB_TOKEN של ההרצה הזו: מוגבל לריפו, ופג בסיום ההרצה.
+on:
+  workflow_dispatch:
+    inputs:
+      idle_minutes:
+        description: "דקות בלי הודעות עד כיבוי אוטומטי"
+        required: false
+        default: "30"
+        type: string
+      max_tokens:
+        description: "מקסימום טוקנים לתשובה"
+        required: false
+        default: "6000"
+        type: string
+      system:
+        description: "הודעת system"
+        required: false
+        default: "אתה עוזר מועיל. ענה בעברית ברורה. כשאתה כותב קוד, שים כל קובץ בבלוק קוד נפרד."
+        type: string
+      model_repo:
+        required: false
+        default: "unsloth/Qwen3.6-35B-A3B-GGUF"
+        type: string
+      model_pattern:
+        required: false
+        default: "*UD-Q4_K_M*"
+        type: string
+      accelerator:
+        required: false
+        default: "NvidiaTeslaT4"
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: kaggle-worker
+  cancel-in-progress: false
+
+jobs:
+  worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Kaggle CLI
+        run: pip install -q kaggle
+
+      - name: Push worker kernel to Kaggle
+        id: push
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+          IN_MODE: worker
+          IN_SYSTEM: ${{ inputs.system }}
+          IN_MODEL_REPO: ${{ inputs.model_repo }}
+          IN_MODEL_PATTERN: ${{ inputs.model_pattern }}
+          IN_MAX_TOKENS: ${{ inputs.max_tokens }}
+          IN_IDLE_MINUTES: ${{ inputs.idle_minutes }}
+          IN_ACCELERATOR: ${{ inputs.accelerator }}
+          RELEASE_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_OWNER: ${{ github.repository_owner }}
+        run: python scripts/push_to_kaggle.py
+
+      - name: Wait while the worker runs
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+          KERNEL_REF: ${{ steps.push.outputs.ref }}
+        run: python scripts/wait_kaggle.py
+
+      - name: Download output
+        if: always() && steps.push.outputs.ref != ''
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+          KERNEL_REF: ${{ steps.push.outputs.ref }}
+        run: |
+          mkdir -p out
+          kaggle kernels output "$KERNEL_REF" -p out || true
+          { echo "## Worker"; cat out/result.txt 2>/dev/null || echo "אין result.txt"; } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: worker-output
+          path: out/
+          if-no-files-found: ignore

@@ -1,18 +1,36 @@
 # -*- coding: utf-8 -*-
 # רץ בתוך Kaggle. המשתנה JOB מוזרק בראש הקובץ על ידי scripts/push_to_kaggle.py
+#
+# שני מצבים:
+#   mode == "task"   : משימה אחת, תשובה נשמרת ל-result.txt וקבצי קוד ל-files/
+#   mode == "worker" : שרת צ'אט קבוע, קורא הודעות מ-Issues בריפו ועונה בתגובות
 import glob
 import json
 import os
+import re
 import shutil
 import subprocess
 import tarfile
 import time
 import urllib.request
 
-OUT = "/kaggle/working"
+import requests
+
+JOB = globals().get("JOB", {})
+
+OUT = os.environ.get("OUT_DIR", "/kaggle/working")
 RELEASE_URL = "https://github.com/{repo}/releases/download/llama-cuda12-sm75/llama-bin.tar.gz"
+LLM_URL = "http://127.0.0.1:8080"
+
+MARKER = "<!--llm-reply-->"
+STATUS_TITLE = "[worker-status]"
+FOOTER_RE = re.compile(r"\n\n<sub>.*?</sub>\s*$", re.S)
+DETAILS_RE = re.compile(r"<details>.*?</details>", re.S)
 
 
+# ----------------------------------------------------------------------------
+# כלים כלליים
+# ----------------------------------------------------------------------------
 def sh(cmd: str) -> str:
     r = subprocess.run(cmd, shell=True, capture_output=True, text=True)
     return (r.stdout + r.stderr).strip()
@@ -32,7 +50,78 @@ def pick_workdir(min_gb: float = 40.0) -> str:
     raise SystemExit("No directory with enough free disk space for the model")
 
 
-def main() -> None:
+# ----------------------------------------------------------------------------
+# חילוץ קוד מתשובה
+# ----------------------------------------------------------------------------
+EXT = {
+    "html": "html", "htm": "html", "css": "css", "js": "js", "javascript": "js", "jsx": "jsx",
+    "ts": "ts", "typescript": "ts", "tsx": "tsx", "python": "py", "py": "py", "java": "java",
+    "kotlin": "kt", "bash": "sh", "sh": "sh", "shell": "sh", "zsh": "sh", "json": "json",
+    "yaml": "yml", "yml": "yml", "xml": "xml", "sql": "sql", "c": "c", "cpp": "cpp", "c++": "cpp",
+    "csharp": "cs", "c#": "cs", "go": "go", "rust": "rs", "php": "php", "md": "md",
+    "markdown": "md", "text": "txt", "txt": "txt", "": "txt",
+}
+FENCE_RE = re.compile(r"```([\w+#.-]*)[^\n]*\n(.*?)(```|\Z)", re.S)
+NAME_RE = re.compile(r"^\s*(?://|#|<!--|/\*|--)\s*(?:file(?:name)?|path)\s*:\s*([\w./-]+)", re.I)
+
+
+def extract_code(text: str):
+    """מחזיר רשימת {name, content, complete} לכל בלוק קוד בתשובה."""
+    out, used = [], set()
+
+    def unique(name: str) -> str:
+        base, dot, ext = name.rpartition(".")
+        if not dot:
+            base, ext = name, ""
+        cand, i = name, 2
+        while cand in used:
+            cand = f"{base}_{i}.{ext}" if ext else f"{base}_{i}"
+            i += 1
+        used.add(cand)
+        return cand
+
+    n = 0
+    for m in FENCE_RE.finditer(text):
+        lang = m.group(1).lower()
+        body = m.group(2).rstrip("\n") + "\n"
+        complete = m.group(3) == "```"
+        if not body.strip():
+            continue
+        n += 1
+        ext = EXT.get(lang, "txt")
+        name = None
+        mm = NAME_RE.match(body.splitlines()[0])
+        if mm:
+            cand = os.path.basename(mm.group(1))
+            if cand and not cand.startswith("."):
+                name = cand
+        if name is None:
+            if ext == "html" and not any(f["name"].startswith("index") for f in out):
+                name = "index.html"
+            else:
+                name = f"code_{n}.{ext}"
+        out.append({"name": unique(name), "content": body, "complete": complete})
+
+    # תשובה שהיא HTML גולמי בלי גדרות ```
+    if not out and text.lstrip().lower().startswith(("<!doctype html", "<html")):
+        out.append({"name": "index.html", "content": text.strip() + "\n", "complete": "</html>" in text.lower()})
+    return out
+
+
+def save_files(files) -> None:
+    if not files:
+        return
+    d = os.path.join(OUT, "files")
+    os.makedirs(d, exist_ok=True)
+    for f in files:
+        with open(os.path.join(d, f["name"]), "w", encoding="utf-8") as fh:
+            fh.write(f["content"])
+
+
+# ----------------------------------------------------------------------------
+# הפעלת llama-server
+# ----------------------------------------------------------------------------
+def start_llama(job: dict):
     print(sh("nvidia-smi"), flush=True)
     n_gpu = len([l for l in sh("nvidia-smi -L").splitlines() if l.startswith("GPU")])
     print(f"[gpu] count={n_gpu}", flush=True)
@@ -42,8 +131,7 @@ def main() -> None:
     bindir = os.path.join(work, "llama-bin")
     os.makedirs(bindir, exist_ok=True)
 
-    # 1) הורדת הבינארי המקומפל מה-Release
-    url = RELEASE_URL.format(repo=JOB["release_repo"])
+    url = RELEASE_URL.format(repo=job["release_repo"])
     print("[llama] downloading", url, flush=True)
     tgz = os.path.join(work, "llama-bin.tar.gz")
     try:
@@ -55,40 +143,37 @@ def main() -> None:
     server = os.path.join(bindir, "llama-server")
     os.chmod(server, 0o755)
 
-    # 2) הורדת המודל
     from huggingface_hub import snapshot_download
 
-    print("[model] downloading", JOB["model_repo"], JOB["model_pattern"], flush=True)
+    print("[model] downloading", job["model_repo"], job["model_pattern"], flush=True)
     t0 = time.time()
     mdir = snapshot_download(
-        JOB["model_repo"],
-        allow_patterns=[JOB["model_pattern"]],
+        job["model_repo"],
+        allow_patterns=[job["model_pattern"]],
         local_dir=os.path.join(work, "models"),
     )
     ggufs = sorted(glob.glob(os.path.join(mdir, "**", "*.gguf"), recursive=True))
     if not ggufs:
         raise SystemExit("No .gguf file matched the pattern")
     print(f"[model] done in {time.time() - t0:.0f}s:", ggufs, flush=True)
-    gguf = ggufs[0]  # במודל מפוצל llama.cpp מוצא לבד את שאר החלקים
+    gguf = ggufs[0]
 
-    # 3) הפעלת השרת
     env = dict(os.environ)
     env["LD_LIBRARY_PATH"] = ":".join([bindir, "/usr/local/cuda/lib64", env.get("LD_LIBRARY_PATH", "")])
-    cmd = [server, "-m", gguf, "-ngl", "99", "-c", "16384", "--host", "127.0.0.1", "--port", "8080"]
+    cmd = [server, "-m", gguf, "-ngl", "99", "-c", str(job.get("ctx", 16384)), "-np", "1",
+           "--host", "127.0.0.1", "--port", "8080"]
     if n_gpu > 1:
         cmd += ["--tensor-split", ",".join(["1"] * n_gpu)]
     log = open(os.path.join(OUT, "server.log"), "w")
     print("[server] starting:", " ".join(cmd), flush=True)
     proc = subprocess.Popen(cmd, env=env, stdout=log, stderr=subprocess.STDOUT)
 
-    import requests
-
     ok = False
     for _ in range(180):  # עד 15 דקות
         if proc.poll() is not None:
             break
         try:
-            if requests.get("http://127.0.0.1:8080/health", timeout=3).status_code == 200:
+            if requests.get(LLM_URL + "/health", timeout=3).status_code == 200:
                 ok = True
                 break
         except Exception:  # noqa: BLE001
@@ -99,42 +184,297 @@ def main() -> None:
         print(sh(f"tail -n 60 {OUT}/server.log"), flush=True)
         raise SystemExit("llama-server did not become healthy")
     print("[server] ready", flush=True)
+    return proc
 
-    # 4) המשימה
-    messages = []
-    if JOB.get("system"):
-        messages.append({"role": "system", "content": JOB["system"]})
-    messages.append({"role": "user", "content": JOB["prompt"]})
+
+def chat(llm_url: str, messages, max_tokens: int, thinking: bool, temperature: float = 0.6):
     body = {
         "messages": messages,
-        "max_tokens": JOB["max_tokens"],
-        "temperature": 0.6,
-        "chat_template_kwargs": {"enable_thinking": bool(JOB.get("thinking"))},
+        "max_tokens": max_tokens,
+        "temperature": temperature,
+        "chat_template_kwargs": {"enable_thinking": bool(thinking)},
     }
-    t0 = time.time()
-    r = requests.post("http://127.0.0.1:8080/v1/chat/completions", json=body, timeout=3600)
-    dt = time.time() - t0
+    r = requests.post(llm_url + "/v1/chat/completions", json=body, timeout=3600)
+    r.raise_for_status()
     data = r.json()
-    with open(os.path.join(OUT, "result.json"), "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    ch = data["choices"][0]
+    msg = ch["message"]
+    return msg.get("content") or "", msg.get("reasoning_content") or "", data.get("usage", {}), ch.get("finish_reason")
 
-    msg = data["choices"][0]["message"]
-    text = msg.get("content") or ""
-    reasoning = msg.get("reasoning_content") or ""
-    usage = data.get("usage", {})
+
+# ----------------------------------------------------------------------------
+# מצב משימה
+# ----------------------------------------------------------------------------
+def run_task(job: dict) -> None:
+    messages = []
+    if job.get("system"):
+        messages.append({"role": "system", "content": job["system"]})
+    messages.append({"role": "user", "content": job["prompt"]})
+
+    t0 = time.time()
+    text, reasoning, usage, finish = chat(LLM_URL, messages, job["max_tokens"], job.get("thinking", False))
+    dt = time.time() - t0
+
+    files = extract_code(text)
+    save_files(files)
+
     out = text
     if reasoning:
         out += "\n\n---\n(reasoning)\n" + reasoning
+    notes = []
+    if finish == "length":
+        notes.append("⚠️ התשובה נחתכה כי הגיעה ל-max_tokens. הגדל את הערך והרץ שוב.")
+    elif any(not f["complete"] for f in files):
+        notes.append("⚠️ אחד מבלוקי הקוד לא נסגר, ייתכן שהתשובה חלקית.")
+    if files:
+        notes.append("קבצים שחולצו: " + ", ".join(f["name"] for f in files))
     out += f"\n\n---\n{dt:.1f}s, usage: {usage}"
+    if notes:
+        out += "\n" + "\n".join(notes)
+
+    with open(os.path.join(OUT, "result.json"), "w", encoding="utf-8") as f:
+        json.dump({"content": text, "reasoning": reasoning, "usage": usage, "finish_reason": finish},
+                  f, ensure_ascii=False, indent=2)
     with open(os.path.join(OUT, "result.txt"), "w", encoding="utf-8") as f:
         f.write(out)
     print(out, flush=True)
 
-    proc.terminate()
+
+# ----------------------------------------------------------------------------
+# מצב Worker: צ'אט דרך Issues
+# ----------------------------------------------------------------------------
+class GH:
+    def __init__(self, repo: str, token: str, api: str = "https://api.github.com"):
+        self.repo, self.api = repo, api.rstrip("/")
+        self.s = requests.Session()
+        self.s.headers.update({
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+        })
+
+    def call(self, method, path, json_body=None, etag=None, params=None):
+        headers = {"If-None-Match": etag} if etag else {}
+        r = self.s.request(method, f"{self.api}/repos/{self.repo}{path}", json=json_body,
+                           params=params, headers=headers, timeout=30)
+        if r.status_code == 304:
+            return 304, None, etag
+        try:
+            data = r.json() if r.content else None
+        except ValueError:
+            data = None
+        return r.status_code, data, r.headers.get("ETag")
+
+
+def all_comments(gh: GH, number: int):
+    res, page = [], 1
+    while True:
+        st, data, _ = gh.call("GET", f"/issues/{number}/comments", params={"per_page": 100, "page": page})
+        if st != 200:
+            raise RuntimeError(f"comments HTTP {st}: {data}")
+        res += data or []
+        if not data or len(data) < 100:
+            return res
+        page += 1
+
+
+def is_owner(comment: dict, owner: str) -> bool:
+    return (comment.get("user") or {}).get("login", "").lower() == owner.lower()
+
+
+def needs_reply(comments, owner: str, handled) -> bool:
+    if not comments:
+        return False
+    last = comments[-1]
+    return (not (last.get("body") or "").startswith(MARKER)) and is_owner(last, owner) and last["id"] not in handled
+
+
+def clean_reply(body: str) -> str:
+    text = body[len(MARKER):]
+    text = FOOTER_RE.sub("", text)
+    text = DETAILS_RE.sub("", text)
+    return text.strip()
+
+
+def build_messages(comments, owner: str, system: str, max_chars: int = 36000):
+    msgs = []
+    for c in comments:
+        body = c.get("body") or ""
+        if body.startswith(MARKER):
+            role, content = "assistant", clean_reply(body)
+        elif is_owner(c, owner):
+            role, content = "user", body.strip()
+        else:
+            continue
+        if not content:
+            continue
+        if msgs and msgs[-1]["role"] == role:
+            msgs[-1]["content"] += "\n\n" + content
+        else:
+            msgs.append({"role": role, "content": content})
+    while len(msgs) > 1 and sum(len(m["content"]) for m in msgs) > max_chars:
+        msgs.pop(0)
+    while msgs and msgs[0]["role"] != "user":
+        msgs.pop(0)
+    head = [{"role": "system", "content": system}] if system else []
+    return head + msgs
+
+
+def reply_to(gh: GH, number: int, comments, owner: str, llm_url: str, job: dict, handled) -> None:
+    last = comments[-1]
+    handled.add(last["id"])
     try:
-        proc.wait(timeout=30)
-    except subprocess.TimeoutExpired:
-        proc.kill()
+        gh.call("POST", f"/issues/comments/{last['id']}/reactions", {"content": "eyes"})
+    except Exception:  # noqa: BLE001
+        pass
+
+    msgs = build_messages(comments, owner, job.get("system", ""), int(job.get("history_chars", 36000)))
+    thinking = False
+    if msgs and msgs[-1]["content"].startswith("/think"):
+        thinking = True
+        msgs[-1]["content"] = msgs[-1]["content"][len("/think"):].strip() or "המשך."
+
+    t0 = time.time()
+    reasoning, usage, finish = "", {}, None
+    try:
+        text, reasoning, usage, finish = chat(llm_url, msgs, int(job.get("max_tokens", 6000)), thinking)
+    except Exception as e:  # noqa: BLE001
+        text = f"⚠️ שגיאה בהפעלת המודל: {e}"
+        finish = "error"
+    dt = time.time() - t0
+
+    body = MARKER + (text or "(תשובה ריקה)")
+    if finish == "length":
+        body += "\n\n> ⚠️ התשובה נחתכה כי הגיעה למגבלת הטוקנים. כתוב \"המשך\" כדי להמשיך."
+    if reasoning:
+        body += f"\n\n<details><summary>חשיבה</summary>\n\n{reasoning[:8000]}\n</details>"
+    body += f"\n\n<sub>⏱ {dt:.1f}s · {usage.get('completion_tokens', '?')} tokens</sub>"
+    body = body[:60000]
+
+    st, data, _ = gh.call("POST", f"/issues/{number}/comments", {"body": body})
+    if st != 201:
+        raise RuntimeError(f"post comment HTTP {st}: {data}")
+
+
+def ensure_status_issue(gh: GH) -> int:
+    st, data, _ = gh.call("GET", "/issues", params={"state": "open", "per_page": 100,
+                                                    "sort": "created", "direction": "asc"})
+    for i in data or []:
+        if i.get("title") == STATUS_TITLE and "pull_request" not in i:
+            return i["number"]
+    st, data, _ = gh.call("POST", "/issues", {"title": STATUS_TITLE, "body": "starting"})
+    if st != 201:
+        raise RuntimeError(f"cannot create status issue: HTTP {st}: {data}")
+    return data["number"]
+
+
+def heartbeat(gh: GH, number: int, state: str, job: dict) -> None:
+    payload = {"state": state, "ts": int(time.time()), "model": job.get("model_repo", "")}
+    body = "Worker status (updated automatically)\n\n```json\n" + json.dumps(payload) + "\n```"
+    gh.call("PATCH", f"/issues/{number}", {"body": body})
+
+
+def read_state(gh: GH, number: int) -> str:
+    st, data, _ = gh.call("GET", f"/issues/{number}")
+    if st != 200 or not data:
+        return ""
+    m = re.search(r"\{[^{}]*\}", data.get("body") or "")
+    if not m:
+        return ""
+    try:
+        return json.loads(m.group(0)).get("state", "")
+    except ValueError:
+        return ""
+
+
+def worker_loop(gh: GH, owner: str, llm_url: str, job: dict):
+    idle_s = float(job.get("idle_minutes", 30)) * 60
+    max_s = float(job.get("max_hours", 5.2)) * 3600
+    poll_active = float(job.get("poll_active", 5))
+    poll_idle = float(job.get("poll_idle", 12))
+    hb_every = float(job.get("heartbeat_seconds", 60))
+
+    status_no = ensure_status_issue(gh)
+    heartbeat(gh, status_no, "online", job)
+    print(f"[worker] online, status issue #{status_no}, owner={owner}", flush=True)
+
+    t0 = last_act = last_hb = time.time()
+    etag, seen, handled, count = None, {}, set(), 0
+    reason = "unknown"
+    while True:
+        now = time.time()
+        if now - t0 > max_s:
+            reason = "max-time"
+            break
+        if now - last_act > idle_s:
+            reason = "idle"
+            break
+        if now - last_hb > hb_every:
+            last_hb = now
+            try:
+                if read_state(gh, status_no) == "stop":
+                    reason = "stop-requested"
+                    break
+                heartbeat(gh, status_no, "online", job)
+            except Exception as e:  # noqa: BLE001
+                print("[worker] heartbeat error:", e, flush=True)
+        try:
+            st, issues, new_etag = gh.call("GET", "/issues", etag=etag, params={
+                "labels": "chat", "state": "open", "per_page": 50, "sort": "updated"})
+            if st in (401, 403):
+                reason = f"auth-error-{st}"
+                break
+            if st == 200:
+                for issue in issues or []:
+                    if "pull_request" in issue or (issue.get("user") or {}).get("login", "").lower() != owner.lower():
+                        continue
+                    if seen.get(issue["number"]) == issue["updated_at"]:
+                        continue
+                    comments = all_comments(gh, issue["number"])
+                    if needs_reply(comments, owner, handled):
+                        print(f"[worker] replying in #{issue['number']}", flush=True)
+                        reply_to(gh, issue["number"], comments, owner, llm_url, job, handled)
+                        count += 1
+                        last_act = time.time()
+                    seen[issue["number"]] = issue["updated_at"]
+                etag = new_etag
+            elif st != 304:
+                raise RuntimeError(f"GitHub API HTTP {st}: {issues}")
+        except Exception as e:  # noqa: BLE001
+            print("[worker] error:", e, flush=True)
+            etag = None
+            time.sleep(10)
+        time.sleep(poll_active if time.time() - last_act < 300 else poll_idle)
+
+    try:
+        heartbeat(gh, status_no, "offline", job)
+    except Exception:  # noqa: BLE001
+        pass
+    print(f"[worker] stopped: {reason}, handled {count} messages", flush=True)
+    return reason, count
+
+
+def run_worker(job: dict) -> None:
+    gh = GH(job["release_repo"], job["gh_token"])
+    reason, count = worker_loop(gh, job["gh_owner"], LLM_URL, job)
+    with open(os.path.join(OUT, "result.txt"), "w", encoding="utf-8") as f:
+        f.write(f"Worker stopped: {reason}. Handled {count} messages.")
+
+
+# ----------------------------------------------------------------------------
+def main() -> None:
+    proc = start_llama(JOB)
+    try:
+        if JOB.get("mode") == "worker":
+            run_worker(JOB)
+        else:
+            run_task(JOB)
+    finally:
+        proc.terminate()
+        try:
+            proc.wait(timeout=30)
+        except subprocess.TimeoutExpired:
+            proc.kill()
 
 
 if __name__ == "__main__":

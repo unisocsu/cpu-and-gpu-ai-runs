@@ -1,0 +1,24 @@
+name: Stop chat worker
+
+# מבקש מה-worker להיסגר (הוא בודק את זה פעם בדקה).
+on:
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  stop:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request stop
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          N=$(gh api "repos/$REPO/issues?state=open&sort=created&direction=asc&per_page=100" \
+              --jq '[.[] | select(.title=="[worker-status]")][0].number')
+          if [ -z "$N" ] || [ "$N" = "null" ]; then echo "אין worker פעיל"; exit 0; fi
+          BODY=$(printf 'Stop requested\n\n```json\n{"state": "stop", "ts": %s}\n```' "$(date +%s)")
+          gh api -X PATCH "repos/$REPO/issues/$N" -f body="$BODY" > /dev/null
+          echo "Stop requested on issue #$N"

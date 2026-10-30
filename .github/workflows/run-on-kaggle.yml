@@ -87,18 +87,40 @@ jobs:
           kaggle kernels output "$KERNEL_REF" -p out || true
           ls -la out
 
-      - name: Show result
+      - name: Upload full output
+        id: full_art
         if: always()
-        run: |
-          {
-            echo "## תשובת המודל"
-            echo
-            if [ -f out/result.txt ]; then cat out/result.txt; else echo "אין result.txt, בדוק את הלוג (out/*.log) ב-artifact."; fi
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - uses: actions/upload-artifact@v4
-        if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: kaggle-output
           path: out/
           if-no-files-found: ignore
+
+      - name: Upload extracted code files
+        id: code_art
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-files
+          path: out/files/
+          if-no-files-found: ignore
+
+      - name: Show result
+        if: always()
+        env:
+          CODE_URL: ${{ steps.code_art.outputs.artifact-url }}
+          FULL_URL: ${{ steps.full_art.outputs.artifact-url }}
+        run: |
+          {
+            echo "## תשובת המודל"
+            echo
+            if [ -n "$CODE_URL" ]; then
+              echo "### ⬇️ [הורדת קבצי הקוד (zip)]($CODE_URL)"
+              echo
+              echo "_ההורדה דורשת התחברות ל-GitHub._ קבצים שחולצו: $(ls out/files 2>/dev/null | tr '\n' ' ')"
+              echo
+            fi
+            if [ -f out/result.txt ]; then cat out/result.txt; else echo "אין result.txt, בדוק את הלוג ב-artifact."; fi
+            echo
+            if [ -n "$FULL_URL" ]; then echo "---"; echo "[הפלט המלא (zip)]($FULL_URL)"; fi
+          } >> "$GITHUB_STEP_SUMMARY"
