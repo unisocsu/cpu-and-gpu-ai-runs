@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מחשבון</title>
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+            padding: 1rem;
+        }
+
+        .calculator {
+            background: #1a1a2e;
+            border-radius: 24px;
+            padding: 1.5rem;
+            box-shadow:
+                0 25px 60px rgba(0, 0, 0, 0.5),
+                0 0 0 1px rgba(255, 255, 255, 0.05);
+            width: 100%;
+            max-width: 360px;
+        }
+
+        .display {
+            background: #0f0f23;
+            border-radius: 16px;
+            padding: 1.25rem;
+            margin-bottom: 1.25rem;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: flex-end;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .expression {
+            color: #888;
+            font-size: 1rem;
+            min-height: 1.5rem;
+            word-break: break-all;
+            text-align: left;
+            direction: ltr;
+            width: 100%;
+        }
+
+        .result {
+            color: #fff;
+            font-size: 2.5rem;
+            font-weight: 300;
+            word-break: break-all;
+            text-align: left;
+            direction: ltr;
+            width: 100%;
+            transition: color 0.2s;
+        }
+
+        .result.error {
+            color: #ff6b6b;
+            font-size: 1.5rem;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.75rem;
+        }
+
+        button {
+            border: none;
+            border-radius: 14px;
+            padding: 1.1rem;
+            font-size: 1.3rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            outline: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button:focus-visible {
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.6);
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .btn-number {
+            background: #16213e;
+            color: #e0e0e0;
+        }
+
+        .btn-number:hover {
+            background: #1a2744;
+        }
+
+        .btn-operator {
+            background: #2d2b55;
+            color: #a78bfa;
+        }
+
+        .btn-operator:hover {
+            background: #363466;
+        }
+
+        .btn-action {
+            background: #1a1a2e;
+            color: #ff6b6b;
+            border: 1px solid rgba(255, 107, 107, 0.2);
+        }
+
+        .btn-action:hover {
+            background: #22223a;
+        }
+
+        .btn-equals {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            grid-column: span 2;
+        }
+
+        .btn-equals:hover {
+            background: linear-gradient(135deg, #7c8fff, #8b5fbf);
+        }
+
+        .btn-zero {
+            grid-column: span 2;
+        }
+
+        /* Ripple effect */
+        button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            transform: translate(-50%, -50%);
+            transition: width 0.4s, height 0.4s, opacity 0.4s;
+            opacity: 0;
+        }
+
+        button:active::after {
+            width: 200px;
+            height: 200px;
+            opacity: 1;
+            transition: 0s;
+        }
+
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            button {
+                transition: none;
+            }
+            button::after {
+                display: none;
+            }
+        }
+
+        /* Mobile */
+        @media (max-width: 400px) {
+            .calculator {
+                padding: 1rem;
+            }
+
+            button {
+                padding: 1rem;
+                font-size: 1.1rem;
+            }
+
+            .result {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="calculator" role="main" aria-label="מחשבון">
+        <div class="display" aria-live="polite" aria-atomic="true">
+            <div class="expression" id="expression" aria-label="ביטוי"></div>
+            <div class="result" id="result" aria-label="תוצאה">0</div>
+        </div>
+
+        <div class="buttons" role="group" aria-label="מקשי המחשבון">
+            <button class="btn-action" data-action="clear" aria-label="נקה הכל">C</button>
+            <button class="btn-action" data-action="backspace" aria-label="מחק תו אחרון">⌫</button>
+            <button class="btn-operator" data-action="operator" data-value="%" aria-label="מודולו">%</button>
+            <button class="btn-operator" data-action="operator" data-value="÷" aria-label="חלק">÷</button>
+
+            <button class="btn-number" data-action="number" data-value="7">7</button>
+            <button class="btn-number" data-action="number" data-value="8">8</button>
+            <button class="btn-number" data-action="number" data-value="9">9</button>
+            <button class="btn-operator" data-action="operator" data-value="×" aria-label="כפל">×</button>
+
+            <button class="btn-number" data-action="number" data-value="4">4</button>
+            <button class="btn-number" data-action="number" data-value="5">5</button>
+            <button class="btn-number" data-action="number" data-value="6">6</button>
+            <button class="btn-operator" data-action="operator" data-value="-" aria-label="חסר">−</button>
+
+            <button class="btn-number" data-action="number" data-value="1">1</button>
+            <button class="btn-number" data-action="number" data-value="2">2</button>
+            <button class="btn-number" data-action="number" data-value="3">3</button>
+            <button class="btn-operator" data-action="operator" data-value="+" aria-label="חבר">+</button>
+
+            <button class="btn-number btn-zero" data-action="number" data-value="0">0</button>
+            <button class="btn-number" data-action="decimal" aria-label="נקודה עשרונית">.</button>
+            <button class="btn-equals" data-action="equals" aria-label="חישוב">=</button>
+        </div>
+    </main>
+
+    <script>
+        (function () {
+            'use strict';
+
+            const expressionEl = document.getElementById('expression');
+            const resultEl = document.getElementById('result');
+
+            let currentInput = '0';
+            let expression = '';
+            let shouldResetInput = false;
+            let lastResult = null;
+
+            function formatNumber(num) {
+                if (num === Infinity || num === -Infinity) return 'שגיאה';
+                if (isNaN(num)) return 'שגיאה';
+
+                const str = String(num);
+                if (str.includes('e')) return str;
+
+                const parts = str.split('.');
+                parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                return parts.join('.');
+            }
+
+            function updateDisplay() {
+                expressionEl.textContent = expression;
+                resultEl.textContent = formatNumber(parseFloat(currentInput)) || currentInput;
+                resultEl.classList.remove('error');
+            }
+
+            function showError(msg) {
+                resultEl.textContent = msg || 'שגיאה';
+                resultEl.classList.add('error');
+            }
+
+            function calculate(a, op, b) {
+                const numA = parseFloat(a);
+                const numB = parseFloat(b);
+
+                if (isNaN(numA) || isNaN(numB)) return null;
+
+                switch (op) {
+                    case '+': return numA + numB;
+                    case '-': return numA - numB;
+                    case '×': return numA * numB;
+                    case '÷':
+                        if (numB === 0) return null;
+                        return numA / numB;
+                    case '%':
+                        if (numB === 0) return null;
+                        return numA % numB;
+                    default: return null;
+                }
+            }
+
+            function handleNumber(value) {
+                if (shouldResetInput) {
+                    currentInput = value;
+                    shouldResetInput = false;
+                } else {
+                    if (currentInput === '0' && value !== '.') {
+                        currentInput = value;
+                    } else {
+                        if (currentInput.length >= 15) return;
+                        currentInput += value;
+                    }
+                }
+                updateDisplay();
+            }
+
+            function handleDecimal() {
+                if (shouldResetInput) {
+                    currentInput = '0.';
+                    shouldResetInput = false;
+                } else if (!currentInput.includes('.')) {
+                    currentInput += '.';
+                }
+                updateDisplay();
+            }
+
+            function handleOperator(op) {
+                if (lastResult !== null && expression === '') {
+                    expression = formatNumber(lastResult) + ' ' + op + ' ';
+                    currentInput = '0';
+                    shouldResetInput = true;
+                    updateDisplay();
+                    return;
+                }
+
+                if (expression === '' && currentInput === '0') return;
+
+                if (expression !== '' && !shouldResetInput) {
+                    const parts = expression.trim().split(' ');
+                    const prevOp = parts[parts.length - 1];
+                    const prevVal = parts[parts.length - 2];
+
+                    const result = calculate(prevVal, prevOp, currentInput);
+                    if (result === null) {
+                        showError('שגיאה בחישוב');
+                        return;
+                    }
+
+                    expression = formatNumber(result) + ' ' + op + ' ';
+                    currentInput = '0';
+                    lastResult = result;
+                } else {
+                    expression = formatNumber(parseFloat(currentInput)) + ' ' + op + ' ';
+                    currentInput = '0';
+                    lastResult = null;
+                }
+
+                shouldResetInput = true;
+                updateDisplay();
+            }
+
+            function handleEquals() {
+                if (expression === '' || expression === ' ') return;
+
+                const parts = expression.trim().split(' ');
+                const op = parts[parts.length - 1];
+                const val1 = parts[parts.length - 2];
+
+                const result = calculate(val1, op, currentInput);
+                if (result === null) {
+                    showError('שגיאה בחישוב');
+                    expression = '';
+                    currentInput = '0';
+                    lastResult = null;
+                    return;
+                }
+
+                lastResult = result;
+                expression = expression.trim() + ' ' + currentInput + ' =';
+                currentInput = String(result);
+                shouldResetInput = true;
+                updateDisplay();
+            }
+
+            function handleClear() {
+                currentInput = '0';
+                expression = '';
+                lastResult = null;
+                shouldResetInput = false;
+                updateDisplay();
+            }
+
+            function handleBackspace() {
+                if (shouldResetInput || lastResult !== null) {
+                    handleClear();
+                    return;
+                }
+
+                if (currentInput.length <= 1 || (currentInput.length === 2 && currentInput.startsWith('-'))) {
+                    currentInput = '0';
+                } else {
+                    currentInput = currentInput.slice(0, -1);
+                }
+                updateDisplay();
+            }
+
+            // Button clicks
+            document.querySelector('.buttons').addEventListener('click', function (e) {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+
+                const action = btn.dataset.action;
+                const value = btn.dataset.value;
+
+                switch (action) {
+                    case 'number':
+                        handleNumber(value);
+                        break;
+                    case 'decimal':
+                        handleDecimal();
+                        break;
+                    case 'operator':
+                        handleOperator(value);
+                        break;
+                    case 'equals':
+                        handleEquals();
+                        break;
+                    case 'clear':
+                        handleClear();
+                        break;
+                    case 'backspace':
+                        handleBackspace();
+                        break;
+                }
+            });
+
+            // Keyboard support
+            document.addEventListener('keydown', function (e) {
+                const key = e.key;
+
+                if (key >= '0' && key <= '9') {
+                    handleNumber(key);
+                } else if (key === '.') {
+                    handleDecimal();
+                } else if (key === '+') {
+                    handleOperator('+');
+                } else if (key === '-') {
+                    handleOperator('-');
+                } else if (key === '*') {
+                    handleOperator('×');
+                } else if (key === '/') {
+                    e.preventDefault();
+                    handleOperator('÷');
+                } else if (key === '%') {
+                    handleOperator('%');
+                } else if (key === 'Enter' || key === '=') {
+                    e.preventDefault();
+                    handleEquals();
+                } else if (key === 'Backspace') {
+                    handleBackspace();
+                } else if (key === 'Escape' || key === 'Delete') {
+                    handleClear();
+                }
+            });
+
+            // Initialize
+            updateDisplay();
+        })();
+    </script>
+</body>
+</html>
