@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+    
+<head>
+    <title> 
+        העברת קבצים
+    </title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+    <script type="text/javascript" src="//code.jquery.com/jquery-2.1.4.min.js"></script>
+    
+        <style type="text/css">
+            #drop-file-upload.hover{
+                background-color: #D8B5A4;
+            }
+            
+            #drop-file-upload{
+                width: 900px;
+                margin: auto;
+                background-color: #CCCCCC;
+                padding: 80px 0;
+                border-radius: 5px;
+                transition: background-color 0.5s;
+                cursor: pointer;
+                color: #818F8F;
+            }
+            
+            #progress-bar{
+                display: block;
+                height: 12px;
+                max-width: 900px;
+                margin: auto;
+                background-color: #A5A5A5;
+                border-radius: 5px;
+                border: #565656 1px solid;
+            }
+            #progress-bar-in{
+                height: 100%;
+                background-color: #476580;
+                width: 0%;
+                transition: width 1s;
+            }
+                
+            
+        </style>
+
+    
+    
+    
+    
+    
+    <style type="text/css">
+        @import url(https://fonts.googleapis.com/css?family=Alef:400,700);
+        
+        body{
+            font-family: 'Alef', sans-serif;
+            text-align: center;
+            background-color: #EFEFEF;
+            padding: 0;
+            margin: 0;
+            color: #505050;
+            direction: rtl;
+        }
+        
+        #header{
+            padding: 19px;
+            background-color: #BACCCC;
+            margin: 0;
+                margin-bottom: 30px;
+        }
+        a{
+            color: #007373;
+            text-decoration: none;
+        }
+        a:hover{
+            text-decoration: underline;
+        }
+    </style>
+    
+    <meta name="referrer" content="origin" />
+</head>
+
+<body class="locale-">
+
+    
+
+<a href="https://magicode.me/" style=" position: fixed; padding: 5px 20px; top: 0; left: 5px; background-color: rgba(0, 0, 0, 0.57); color: white; text-decoration: none; border-radius: 0px 0px 10px 10px; z-index: 1000;">
+    magicode 
+</a>
+
+    <a href="/send-file/upload" >
+        <h1 id="header">
+            העברת קבצים
+        </h1>
+    </a>
+    
+    
+    
+    <section id="section">
+        
+    
+
+    <div id="body">
+        
+
+        <!--
+            <iframe  sandbox="allow-scripts allow-popups"  seamless srcdoc="/ads" style="width: 100%;border: 0;height: 70px;"></iframe>
+        -->
+        
+        <div >
+            
+            <h2  id="drop-file-upload">
+             גרור לכאן את הקובץ שברצונך לשלוח
+             <br>
+            או הקלק כדי לבחור מהמחשב
+            </h2>
+            
+            
+            <div id="upload-status" hidden="hidden">
+                <h3>
+                    מעלה
+                </h3>
+                <p id="upload-progress">
+                    50.0%
+                </p>
+                <div id="progress-bar">
+                    <div id="progress-bar-in"></div>
+                </div>
+            </div>
+            
+            <div id="link-file-div" hidden="hidden">
+                <h3>
+                    פתח את הלינק בכדי להוריד את הקובץ:
+                </h3>
+                <a id="link-file" > </a>
+            </div>
+            
+            
+            <h3 style="font-weight: normal;">
+                ניתן להעלות עד 10 ג'יגה
+                <br>
+                הקובץ ימחק אחרי 2 ימים מסיום ההעלאה.
+                <br>
+                אתר זה לא מיועד להפצת קבצים לציבור.
+                אין לשתף את הלינקים באתרים ציבוריים.
+                <br>
+                הורדה מוגבלת ל3 הורדות במקביל.
+                <br>
+                אסור להשתמש  באתר להעברת קבצים שאסור להחזיק אותם לפי תורת ישראל
+                <br>
+                השימוש באתר על אחריות המשתמש בלבד.
+                <br>
+                האתר או מפעיליו לא יהיו אחראים כלל לנזק שיגרם בעיקבות השימוש באתר.
+            </h3>
+        </div>
+        
+        
+    
+    <script type="text/javascript" src="/js/send-file/bytes.js"></script>
+    
+    <script type="text/javascript" src="/js/send-file/send-file.min.js?v=1"></script>
+    
+    </div>
+
+    </section>
+    
+    <div>
+        <a href="/send-file/upload">
+            העלה קובץ חדש
+        </a>
+    </div>
+    
+    <p style="text-align: center;">
+     © 2015-2016 Magicode
+</p>
+    <script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-26532647-4', 'auto');
+  ga('send', 'pageview');
+
+</script>
+    
+    <script type="text/javascript" src="/p/p.js"></script>
+</body>
+
+</html>
