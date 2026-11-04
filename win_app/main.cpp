@@ -7,7 +7,6 @@
 #pragma comment(lib, "comctl32.lib")
 
 // ─── Global State ────────────────────────────────────────
-static HWND hDlg;
 static HWND hDisplay;
 static HWND hResult;
 static char currentInput[64] = "";
@@ -15,97 +14,104 @@ static char lastResult[64] = "";
 static bool newInput = true;
 
 // ─── Update the display ──────────────────────────────────
-void UpdateDisplay(const char* text) {
-    SetWindowText(hDisplay, text);
+void UpdateDisplay(const wchar_t* text) {
+    SetWindowTextW(hDisplay, text);
 }
 
-void UpdateResult(const char* text) {
-    SetWindowText(hResult, text);
+void UpdateResult(const wchar_t* text) {
+    SetWindowTextW(hResult, text);
 }
 
 // ─── Button Click Handler ────────────────────────────────
-void OnButton(char btn) {
-    if (newInput && (btn >= '0' && btn <= '9')) {
-        currentInput[0] = btn;
-        currentInput[1] = '\0';
-        newInput = false;
-    } else if (btn >= '0' && btn <= '9') {
-        int len = strlen(currentInput);
-        if (len < 63) {
-            currentInput[len] = btn;
-            currentInput[len + 1] = '\0';
-        }
-    } else if (btn == '.') {
-        if (newInput) {
-            strcpy(currentInput, "0.");
-            newInput = false;
-        } else if (strchr(currentInput, '.') == NULL) {
-            int len = strlen(currentInput);
-            currentInput[len] = '.';
-            currentInput[len + 1] = '\0';
-        }
-    } else if (btn == 'C') {
+void OnButtonClick(int btnId) {
+    wchar_t wbuf[64];
+    char buf[64];
+
+    if (btnId == 2000) { // C
         currentInput[0] = '\0';
         lastResult[0] = '\0';
         newInput = true;
-        UpdateDisplay("");
-        UpdateResult("");
-    } else if (btn == '±') {
+        UpdateDisplay(L"");
+        UpdateResult(L"");
+    }
+    else if (btnId == 2001) { // ±
         if (strlen(currentInput) > 0 && currentInput[0] != '0') {
             if (currentInput[0] == '-') {
                 memmove(currentInput, currentInput + 1, strlen(currentInput) + 1);
             } else {
-                char temp[64];
-                sprintf(temp, "-%s", currentInput);
-                strcpy(currentInput, temp);
+                sprintf(buf, "-%s", currentInput);
+                strcpy(currentInput, buf);
             }
-            UpdateDisplay(currentInput);
+            mbstowcs(wbuf, currentInput, 63);
+            wbuf[63] = L'\0';
+            UpdateDisplay(wbuf);
         }
-    } else if (btn == '⌫') {
+    }
+    else if (btnId == 2002) { // ⌫ (backspace)
         int len = strlen(currentInput);
         if (len > 0) {
             currentInput[len - 1] = '\0';
-            UpdateDisplay(currentInput);
+            mbstowcs(wbuf, currentInput, 63);
+            wbuf[63] = L'\0';
+            UpdateDisplay(wbuf);
         }
-    } else if (btn == '=') {
+    }
+    else if (btnId == 2003) { // =
         if (strlen(currentInput) > 0) {
             double val = atof(currentInput);
             double result = pow(val, 2) + sin(val) * 100;
-            char buf[64];
             sprintf(buf, "%.6f", result);
             strcpy(lastResult, buf);
             strcpy(currentInput, buf);
             newInput = true;
-            UpdateDisplay(currentInput);
-            UpdateResult("√(x² + sin(x)·100)");
+            mbstowcs(wbuf, currentInput, 63);
+            wbuf[63] = L'\0';
+            UpdateDisplay(wbuf);
+            UpdateResult(L"x² + sin(x)·100");
         }
     }
-}
+    else if (btnId >= 2004 && btnId <= 2014) { // Numbers and dot
+        char ch = (char)('0' + (btnId - 2004));
+        if (btnId == 2014) ch = '.'; // dot button
 
-// ─── Create Button ───────────────────────────────────────
-HWND CreateButton(HWND parent, const char* text, int x, int y, int w, int h, int id) {
-    return CreateWindowW(
-        L"BUTTON", text,
-        WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
-        x, y, w, h,
-        parent, (HMENU)id, GetModuleHandle(NULL), NULL
-    );
+        if (newInput) {
+            if (ch == '.') {
+                strcpy(currentInput, "0.");
+            } else {
+                currentInput[0] = ch;
+                currentInput[1] = '\0';
+            }
+            newInput = false;
+        } else {
+            int len = strlen(currentInput);
+            if (len < 63) {
+                if (ch == '.' && strchr(currentInput, '.') != NULL) {
+                    // Already has dot, ignore
+                } else {
+                    currentInput[len] = ch;
+                    currentInput[len + 1] = '\0';
+                }
+            }
+        }
+        mbstowcs(wbuf, currentInput, 63);
+        wbuf[63] = L'\0';
+        UpdateDisplay(wbuf);
+    }
 }
 
 // ─── Dialog Procedure ────────────────────────────────────
 INT_PTR CALLBACK DialogProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
         case WM_INITDIALOG:
-            hDlg = hwnd;
             hDisplay = GetDlgItem(hwnd, 1001);
             hResult = GetDlgItem(hwnd, 1002);
-            UpdateDisplay("");
-            UpdateResult("");
+            UpdateDisplay(L"");
+            UpdateResult(L"");
             return TRUE;
 
         case WM_COMMAND:
             if (LOWORD(wParam) >= 2000 && LOWORD(wParam) < 3000) {
-                OnButton((char)(LOWORD(wParam) - 2000));
+                OnButtonClick(LOWORD(wParam));
                 return TRUE;
             }
             break;
@@ -125,11 +131,6 @@ INT_PTR CALLBACK DialogProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
         case WM_CREATE: {
-            INITCOMMONCONTROLSEX icex;
-            icex.dwSize = sizeof(INITCOMMONCONTROLSEX);
-            icex.dwICC = ICC_BAR_CLASSES;
-            InitCommonControlsEx(&icex);
-
             // Title bar
             CreateWindowW(L"STATIC", L"🧮 Calculator Pro",
                 WS_VISIBLE | WS_CHILD | SS_CENTER,
@@ -146,20 +147,24 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 15, 100, 370, 25, hwnd, NULL, GetModuleHandle(NULL), NULL);
 
             // Buttons
-            const char* labels[] = {"C", "±", "⌫", "=", "7", "8", "9", "4", "5", "6", "1", "2", "3", "0", "."};
+            const wchar_t* labels[] = {L"C", L"±", L"⌫", L"=", L"7", L"8", L"9", L"4", L"5", L"6", L"1", L"2", L"3", L"0", L"."};
             for (int i = 0; i < 15; i++) {
                 int row = i / 4;
                 int col = i % 4;
                 int btnId = 2000 + i;
-                CreateButton(hwnd, labels[i],
-                    15 + col * 95, 135 + row * 45, 90, 40, btnId);
+                CreateWindowW(
+                    L"BUTTON", labels[i],
+                    WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+                    15 + col * 95, 135 + row * 45, 90, 40,
+                    hwnd, (HMENU)btnId, GetModuleHandle(NULL), NULL
+                );
             }
             return 0;
         }
 
         case WM_COMMAND:
             if (LOWORD(wParam) >= 2000 && LOWORD(wParam) < 3000) {
-                OnButton((char)(LOWORD(wParam) - 2000));
+                OnButtonClick(LOWORD(wParam));
                 return 0;
             }
             break;
@@ -197,7 +202,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     // Create window
     HWND hwnd = CreateWindowW(
         L"CalculatorProClass",
-        L"🧮 Calculator Pro — מכוונן מחשבון",
+        L"🧮 Calculator Pro — מחשבון",
         WS_OVERLAPPEDWINDOW & ~WS_THICKFRAME & ~WS_MAXIMIZEBOX,
         CW_USEDEFAULT, CW_USEDEFAULT, 400, 420,
         NULL, NULL, hInstance, NULL
