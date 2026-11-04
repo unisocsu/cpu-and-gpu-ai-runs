@@ -1,0 +1,163 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  direction: rtl;
+}
+
+.calculator {
+  background: #1a1a2e;
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  width: 380px;
+}
+
+.display {
+  background: #16213e;
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 20px;
+  text-align: left;
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-end;
+  border: 2px solid #0f3460;
+}
+
+.previous-operand {
+  color: #888;
+  font-size: 18px;
+  min-height: 25px;
+  direction: ltr;
+}
+
+.current-operand {
+  color: #fff;
+  font-size: 42px;
+  font-weight: bold;
+  direction: ltr;
+  word-wrap: break-word;
+  word-break: break-all;
+}
+
+.buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 15px;
+}
+
+.btn {
+  padding: 20px;
+  font-size: 22px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  outline: none;
+  user-select: none;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn-number {
+  background: #16213e;
+  color: #fff;
+  border: 1px solid #0f3460;
+}
+
+.btn-number:hover {
+  background: #1a2a4a;
+}
+
+.btn-operator {
+  background: #e94560;
+  color: #fff;
+}
+
+.btn-operator:hover {
+  background: #ff6b81;
+}
+
+.btn-function {
+  background: #533483;
+  color: #fff;
+}
+
+.btn-function:hover {
+  background: #6c44a2;
+}
+
+.btn-equals {
+  background: #00d9ff;
+  color: #1a1a2e;
+  font-weight: bold;
+  font-size: 28px;
+}
+
+.btn-equals:hover {
+  background: #00f0ff;
+}
+
+.btn-zero {
+  grid-column: span 2;
+}
+
+.scientific-buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.btn-scientific {
+  background: #0f3460;
+  color: #00d9ff;
+  padding: 15px;
+  font-size: 18px;
+  border: 1px solid #1a5276;
+}
+
+.btn-scientific:hover {
+  background: #1a5276;
+}
+
+/* אנימציות */
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.calculator {
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
