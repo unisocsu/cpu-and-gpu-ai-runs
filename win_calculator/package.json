@@ -1,0 +1,30 @@
+{
+  "name": "win-calculator",
+  "version": "1.0.0",
+  "description": "מחשבון גרפי ל-Windows",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --win",
+    "dist": "electron-builder --win portable"
+  },
+  "build": {
+    "appId": "com.calculator.app",
+    "productName": "מחשבון",
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "directories": {
+      "output": "dist"
+    }
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  }
+}
