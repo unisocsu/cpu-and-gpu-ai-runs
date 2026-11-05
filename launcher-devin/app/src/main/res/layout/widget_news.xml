@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/colorWidgetBackground"
+    android:padding="12dp">
+
+    <TextView
+        android:id="@+id/widgetNewsTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/label_news"
+        android:textColor="@color/colorWidgetAccent"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:id="@+id/widgetNewsHeadline"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="כותרת חדשות ראשית..."
+        android:textColor="@color/colorTextPrimary"
+        android:textSize="14sp"
+        android:maxLines="3"
+        android:ellipsize="end"
+        android:lineSpacingExtra="2dp" />
+
+    <TextView
+        android:id="@+id/widgetNewsSource"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="מקור"
+        android:textColor="@color/colorTextSecondary"
+        android:textSize="11sp"
+        android:layout_marginTop="4dp" />
+
+    <TextView
+        android:id="@+id/widgetNewsLoading"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/news_loading"
+        android:textColor="@color/colorTextSecondary"
+        android:textSize="12sp"
+        android:layout_marginTop="4dp" />
+
+</LinearLayout>
