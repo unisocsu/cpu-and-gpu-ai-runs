@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Weather Widget Provider Info -->
+    <appwidget-provider
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:minWidth="250dp"
+        android:minHeight="110dp"
+        android:updatePeriodMillis="1800000"
+        android:initialLayout="@layout/widget_weather"
+        android:resizeMode="horizontal|vertical"
+        android:widgetCategory="homeScreen" />
+
+    <!-- Clock Widget Provider Info -->
+    <appwidget-provider
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:minWidth="180dp"
+        android:minHeight="110dp"
+        android:updatePeriodMillis="1000"
+        android:initialLayout="@layout/widget_clock"
+        android:resizeMode="horizontal|vertical"
+        android:widgetCategory="homeScreen" />
+
+    <!-- Music Widget Provider Info -->
+    <appwidget-provider
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:minWidth="250dp"
+        android:minHeight="110dp"
+        android:updatePeriodMillis="0"
+        android:initialLayout="@layout/widget_music"
+        android:resizeMode="horizontal|vertical"
+        android:widgetCategory="homeScreen" />
+
+    <!-- News Widget Provider Info -->
+    <appwidget-provider
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:minWidth="250dp"
+        android:minHeight="250dp"
+        android:updatePeriodMillis="900000"
+        android:initialLayout="@layout/widget_news"
+        android:resizeMode="horizontal|vertical"
+        android:widgetCategory="homeScreen" />
+
+    <!-- System Info Widget Provider Info -->
+    <appwidget-provider
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:minWidth="250dp"
+        android:minHeight="250dp"
+        android:updatePeriodMillis="30000"
+        android:initialLayout="@layout/widget_systeminfo"
+        android:resizeMode="horizontal|vertical"
+        android:widgetCategory="homeScreen" />
+</resources>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Media Launcher</string>
+    <string name="title_all_apps">כל האפליקציות</string>
+    <string name="title_settings">הגדרות</string>
+    <string name="label_weather">מזג אוויר</string>
+    <string name="label_clock">שעה</string>
+    <string name="label_music">מוזיקה</string>
+    <string name="label_news">חדשות</string>
+    <string name="label_system">מערכת</string>
+    <string name="btn_open_navigation">פתח ניווט</string>
+    <string name="btn_all_apps">כל האפליקציות</string>
+    <string name="btn_settings">הגדרות</string>
+    <string name="hint_select_navigation_app">בחר אפליקציית ניווט</string>
+    <string name="action_open">פתח</string>
+    <string name="action_remove">הסר מהמסך הביתי</string>
+    <string name="action_move">סדר מחדש</string>
+    <string name="msg_app_removed">האפליקציה הוסרה מהמסך הביתי</string>
+    <string name="search_apps">חיפוש אפליקציות...</string>
+    <string name="no_navigation_selected">לא נבחרה אפליקציית ניווט</string>
+    <string name="weather_loading">טוען מזג אוויר...</string>
+    <string name="news_loading">טוען חדשות...</string>
+    <string name="music_paused">מוזיקה מושהית</string>
+    <string name="music_playing">מוזיקה מושמעת</string>
+    <string name="storage_label">אחסון</string>
+    <string name="ram_label">זיכרון</string>
+    <string name="cpu_label">מעבד</string>
+    <string name="battery_label">סוללה</string>
+</resources>
