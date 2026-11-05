@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#1a1a2e"
+    android:padding="16dp">
+
+    <!-- כפתור חזרה -->
+    <Button
+        android:id="@+id/btnBack"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="← חזרה"
+        android:textSize="18sp"
+        android:textColor="#ffffff"
+        android:backgroundTint="#4ecca3"
+        android:layout_marginBottom="16dp" />
+
+    <!-- תצוגה -->
+    <TextView
+        android:id="@+id/display"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:background="#16213e"
+        android:gravity="end|center_vertical"
+        android:padding="20dp"
+        android:text="0"
+        android:textColor="#ffffff"
+        android:textSize="48sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp" />
+
+    <!-- גריד כפתורים -->
+    <GridLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:columnCount="4"
+        android:rowCount="5"
+        android:alignmentMode="alignMargins"
+        android:columnOrderPreserved="false">
+
+        <!-- שורה 1 -->
+        <Button
+            android:id="@+id/btnClear"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_margin="8dp"
+            android:text="C"
+            android:textSize="28sp"
+            android:textColor="#ffffff"
+            android:backgroundTint="#e94560" />
+
+        <Button
+            android:id="@+id/btnDivide"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_margin="8dp"
+            android:text="÷"
+            android:textSize="28sp"
+            android:textColor="#ffffff"
+            android:backgroundTint="#4ecca3" />
+
+        <Button
+            android:id="@+id/btnMultiply"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_margin="8dp"
+            android:text="×"
+            android:textSize="28sp"
+            android:textColor="#ffffff"
+            android:backgroundTint="#4ecca3" />
+
+        <Button
+            android:id="@+id/btnDelete"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_margin="8dp"
+            android:text="⌫"
+            android:textSize="28sp"
+            android:textColor="#ffffff"
+            android:backgroundTint="#e94560" />
+
+        <!-- שורה 2 -->
+        <Button
+            android:id="@+id/btn7"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_margin="8dp"
+            android:text="7"
+            android:textSize="28sp"
+            android:textColor="#ffffff"
+            android:backgroundTint="#0f3460" />
+
+        <Button
+            android:id="@+id/btn8"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_margin="8dp"
+            android:text="8"
+            android:textSize="28sp"
+            android:textColor="#ffffff"
+            android:backgroundTint="#0f3460" />
+
+        <Button
+            android:id="@+id/btn9"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_margin="8dp"
+            android:text="9"
+            android:textSize="28sp"
+            android:textColor="#ffffff"
+            android:backgroundTint="#0f3460" />
+
+        <Button
+            android:id="@+id/btnMinus"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_margin="8dp"
+            android:text="-"
+            android:textSize="28sp"
+            android:textColor="#ffffff"
+            android:backgroundTint="#4ecca3" />
+
+        <!-- שורה 3 -->
+        <Button
+            android:id="@+id/btn4"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_margin="8dp"
+            android:text="4"
+            android:textSize="28sp"
+            android:textColor="#ffffff"
+            android:backgroundTint="#0f3460" />
+
+        <Button
+            android:id="@+id/btn5"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_margin="8dp"
+            android:text="5"
+            android:textSize="28sp"
+            android:textColor="#ffffff"
+            android:backgroundTint="#0f3460" />
+
+        <Button
+            android:id="@+id/btn6"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_margin="8dp"
+            android:text="6"
+            android:textSize="28sp"
+            android:textColor="#ffffff"
+            android:backgroundTint="#0f3460" />
+
+        <Button
+            android:id="@+id/btnPlus"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_margin="8dp"
+            android:text="+"
+            android:textSize="28sp"
+            android:textColor="#ffffff"
+            android:backgroundTint="#4ecca3" />
+
+        <!-- שורה 4 -->
+        <Button
+            android:id="@+id/btn1"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_margin="8dp"
+            android:text="1"
+            android:textSize="28sp"
+            android:textColor="#ffffff"
+            android:backgroundTint="#0f3460" />
+
+        <Button
+            android:id="@+id/btn2"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_margin="8dp"
+            android:text="2"
+            android:textSize="28sp"
+            android:textColor="#ffffff"
+            android:backgroundTint="#0f3460" />
+
+        <Button
+            android:id="@+id/btn3"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_margin="8dp"
+            android:text="3"
+            android:textSize="28sp"
+            android:textColor="#ffffff"
+            android:backgroundTint="#0f3460" />
+
+        <Button
+            android:id="@+id/btnEquals"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_margin="8dp"
+            android:text="="
+            android:textSize="28sp"
+            android:textColor="#ffffff"
+            android:backgroundTint="#e94560" />
+
+        <!-- שורה 5 -->
+        <Button
+            android:id="@+id/btn0"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="2"
+            android:layout_rowWeight="1"
+            android:layout_margin="8dp"
+            android:text="0"
+            android:textSize="28sp"
+            android:textColor="#ffffff"
+            android:backgroundTint="#0f3460" />
+
+        <Button
+            android:id="@+id/btnDot"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_margin="8dp"
+            android:text="."
+            android:textSize="28sp"
+            android:textColor="#ffffff"
+            android:backgroundTint="#0f3460" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_columnWeight="1"
+            android:layout_rowWeight="1"
+            android:layout_margin="8dp" />
+
+    </GridLayout>
+
+</LinearLayout>

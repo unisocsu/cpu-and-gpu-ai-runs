@@ -3107,13 +3107,19 @@ id btn7
 id btn8
 id btn9
 id btnAdd
+id btnBack
+id btnCalculator
 id btnClear
 id btnDecimal
 id btnDelete
 id btnDivide
+id btnDot
 id btnEquals
+id btnMinus
 id btnMultiply
 id btnPercent
+id btnPlus
+id btnSnake
 id btnSubtract
 id buttonPanel
 id cache_measures
@@ -3174,6 +3180,7 @@ id disableIntraAutoTransition
 id disablePostScroll
 id disableScroll
 id disjoint
+id display
 id displayTextView
 id dragAnticlockwise
 id dragClockwise
@@ -3624,7 +3631,9 @@ layout abc_search_dropdown_item_icons_2line
 layout abc_search_view
 layout abc_select_dialog_material
 layout abc_tooltip
+layout activity_calculator
 layout activity_main
+layout activity_main_menu
 layout custom_dialog
 layout design_bottom_navigation_item
 layout design_bottom_sheet_dialog

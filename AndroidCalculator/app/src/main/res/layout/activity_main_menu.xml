@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:background="#1a1a2e">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="אפליקציה"
+        android:textSize="36sp"
+        android:textColor="#ffffff"
+        android:layout_marginBottom="60dp"
+        android:textStyle="bold" />
+
+    <Button
+        android:id="@+id/btnCalculator"
+        android:layout_width="300dp"
+        android:layout_height="80dp"
+        android:text="מחשבון"
+        android:textSize="28sp"
+        android:textColor="#ffffff"
+        android:backgroundTint="#4ecca3"
+        android:layout_marginBottom="30dp" />
+
+    <Button
+        android:id="@+id/btnSnake"
+        android:layout_width="300dp"
+        android:layout_height="80dp"
+        android:text="סנייק"
+        android:textSize="28sp"
+        android:textColor="#ffffff"
+        android:backgroundTint="#e94560"
+        android:layout_marginBottom="30dp" />
+
+</LinearLayout>
