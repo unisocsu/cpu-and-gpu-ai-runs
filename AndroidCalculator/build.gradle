@@ -1,4 +1,4 @@
-// Top-level build file
+// Top-level build file - use buildscript for AGP
 buildscript {
     repositories {
         google()
@@ -7,10 +7,6 @@ buildscript {
     dependencies {
         classpath 'com.android.tools.build:gradle:8.2.0'
     }
-}
-
-plugins {
-    id 'com.android.application' version '8.2.0' apply false
 }
 
 task clean(type: Delete) {
