@@ -1,0 +1,26 @@
+R_DEF: Internal format may change without notice
+local
+id btn0
+id btn1
+id btn2
+id btn3
+id btn4
+id btn5
+id btn6
+id btn7
+id btn8
+id btn9
+id btnAdd
+id btnClear
+id btnDecimal
+id btnDelete
+id btnDivide
+id btnEquals
+id btnMultiply
+id btnPercent
+id btnSubtract
+id displayTextView
+layout activity_main
+mipmap ic_launcher
+string app_name
+style Theme.Calculator
