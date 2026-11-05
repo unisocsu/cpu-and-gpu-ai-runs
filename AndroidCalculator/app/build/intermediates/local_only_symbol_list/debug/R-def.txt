@@ -24,12 +24,16 @@ id btnMultiply
 id btnPercent
 id btnPlus
 id btnSnake
+id btnStart
 id btnSubtract
 id display
 id displayTextView
+id scoreText
+id snakeView
 layout activity_calculator
 layout activity_main
 layout activity_main_menu
+layout activity_snake
 mipmap ic_launcher
 string app_name
 style Theme.Calculator

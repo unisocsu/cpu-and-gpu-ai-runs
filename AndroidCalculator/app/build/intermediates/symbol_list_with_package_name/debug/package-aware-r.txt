@@ -3120,6 +3120,7 @@ id btnMultiply
 id btnPercent
 id btnPlus
 id btnSnake
+id btnStart
 id btnSubtract
 id buttonPanel
 id cache_measures
@@ -3378,6 +3379,7 @@ id save_non_transition_alpha
 id save_overlay_view
 id sawtooth
 id scale
+id scoreText
 id screen
 id scroll
 id scrollIndicatorDown
@@ -3423,6 +3425,7 @@ id skipped
 id slide
 id snackbar_action
 id snackbar_text
+id snakeView
 id snap
 id snapMargins
 id south
@@ -3634,6 +3637,7 @@ layout abc_tooltip
 layout activity_calculator
 layout activity_main
 layout activity_main_menu
+layout activity_snake
 layout custom_dialog
 layout design_bottom_navigation_item
 layout design_bottom_sheet_dialog

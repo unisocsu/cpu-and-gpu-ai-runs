@@ -1,18 +1,22 @@
 [
     {
+        "merged": "/root/.gradle/daemon/8.5/com.example.calculator.app-merged_res-4:/layout_activity_main_menu.xml.flat",
+        "source": "/root/.gradle/daemon/8.5/com.example.calculator.app-main-6:/layout/activity_main_menu.xml"
+    },
+    {
+        "merged": "com.example.calculator.app-merged_res-4:/layout_activity_snake.xml.flat",
+        "source": "com.example.calculator.app-main-6:/layout/activity_snake.xml"
+    },
+    {
         "merged": "/root/.gradle/daemon/8.5/com.example.calculator.app-merged_res-4:/mipmap-hdpi_ic_launcher.png.flat",
         "source": "/root/.gradle/daemon/8.5/com.example.calculator.app-main-6:/mipmap-hdpi/ic_launcher.png"
     },
     {
-        "merged": "com.example.calculator.app-merged_res-4:/layout_activity_calculator.xml.flat",
-        "source": "com.example.calculator.app-main-6:/layout/activity_calculator.xml"
-    },
-    {
-        "merged": "com.example.calculator.app-merged_res-4:/layout_activity_main_menu.xml.flat",
-        "source": "com.example.calculator.app-main-6:/layout/activity_main_menu.xml"
-    },
-    {
         "merged": "/root/.gradle/daemon/8.5/com.example.calculator.app-merged_res-4:/layout_activity_main.xml.flat",
         "source": "/root/.gradle/daemon/8.5/com.example.calculator.app-main-6:/layout/activity_main.xml"
+    },
+    {
+        "merged": "/root/.gradle/daemon/8.5/com.example.calculator.app-merged_res-4:/layout_activity_calculator.xml.flat",
+        "source": "/root/.gradle/daemon/8.5/com.example.calculator.app-main-6:/layout/activity_calculator.xml"
     }
 ]

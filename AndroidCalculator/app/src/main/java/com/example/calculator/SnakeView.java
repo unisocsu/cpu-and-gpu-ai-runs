@@ -7,7 +7,6 @@ import android.graphics.Paint;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -16,7 +15,6 @@ import java.util.Random;
 
 public class SnakeView extends View {
 
-    private static final String TAG = "SnakeView";
     private static final int GRID_SIZE = 20;
     private static final int GAME_SPEED = 150; // milliseconds
 
@@ -36,6 +34,7 @@ public class SnakeView extends View {
     private Paint foodPaint;
     private Paint backgroundPaint;
     private Paint textPaint;
+    private Paint gridPaint;
     
     private int gridWidth;
     private int gridHeight;
@@ -71,6 +70,10 @@ public class SnakeView extends View {
         textPaint.setColor(Color.WHITE);
         textPaint.setTextSize(40);
         textPaint.setTextAlign(Paint.Align.CENTER);
+        
+        gridPaint = new Paint();
+        gridPaint.setColor(Color.parseColor("#16213e"));
+        gridPaint.setStrokeWidth(1);
         
         initializeGame();
     }
@@ -235,7 +238,7 @@ public class SnakeView extends View {
         super.onDraw(canvas);
         
         // Draw background
-        canvasPaint(canvas);
+        canvas.drawColor(Color.parseColor("#1a1a2e"));
         
         // Draw grid
         drawGrid(canvas);
@@ -252,15 +255,7 @@ public class SnakeView extends View {
         }
     }
 
-    private void canvasPaint(Canvas canvas) {
-        canvas.drawRect(0, 0, getWidth(), getHeight(), backgroundPaint);
-    }
-
     private void drawGrid(Canvas canvas) {
-        Paint gridPaint = new Paint();
-        gridPaint.setColor(Color.parseColor("#16213e"));
-        gridPaint.setStrokeWidth(1);
-        
         for (int i = 0; i <= gridWidth; i++) {
             canvas.drawLine(i * GRID_SIZE, 0, i * GRID_SIZE, getHeight(), gridPaint);
         }
