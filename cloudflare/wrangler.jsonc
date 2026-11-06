@@ -1,6 +1,6 @@
 {
   "$schema": "https://developers.cloudflare.com/workers/wrangler/config-schema.json",
-  "name": "unisocsu-ai-platform",
+  "name": "ai",
   "main": "src/index.js",
   "compatibility_date": "2026-11-05",
   "workers_dev": true,
