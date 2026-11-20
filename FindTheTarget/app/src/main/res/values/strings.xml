@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">מציאת המטרה</string>
+    <string name="start_game">התחל משחק</string>
+    <string name="score">ניקוד: %d</string>
+    <string name="time">זמן: %d שניות</string>
+    <string name="game_over">המשחק נגמר!</string>
+    <string name="play_again">שחק שוב</string>
+    <string name="tap_the_circle">לחץ על העיגול האדום!</string>
+</resources>

@@ -1,0 +1,72 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#0d47a1"
+    android:padding="16dp">
+    
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="16dp">
+        
+        <TextView
+            android:id="@+id/scoreTextView"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="ניקוד: 0"
+            android:textSize="24sp"
+            android:textColor="#ffffff"
+            android:textAlignment="center"
+            android:fontFamily="sans-serif-medium" />
+        
+        <TextView
+            android:id="@+id/timeTextView"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="זמן: 30 שניות"
+            android:textSize="24sp"
+            android:textColor="#ffffff"
+            android:textAlignment="center"
+            android:fontFamily="sans-serif-medium" />
+    </LinearLayout>
+    
+    <!-- Game Area -->
+    <com.example.findthetarget.GameView
+        android:id="@+id/gameView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="#1a237e"
+        android:layout_marginBottom="16dp" />
+    
+    <!-- Status Text -->
+    <TextView
+        android:id="@+id/statusTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textSize="18sp"
+        android:textColor="#ffeb3b"
+        android:textAlignment="center"
+        android:visibility="gone"
+        android:layout_marginBottom="8dp" />
+    
+    <!-- Start Button -->
+    <Button
+        android:id="@+id/startButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="התחל משחק"
+        android:textSize="20sp"
+        android:backgroundTint="#4caf50"
+        android:textColor="#ffffff"
+        android:padding="16dp" />
+    
+</LinearLayout>
