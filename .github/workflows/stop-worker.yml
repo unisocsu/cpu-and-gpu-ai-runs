@@ -8,7 +8,7 @@ on:
         required: false
         default: both
         type: choice
-        options: [both, worker, executor, windows]
+        options: [both, worker, executor, windows, proxy]
 
 permissions:
   issues: write
@@ -37,3 +37,4 @@ jobs:
           if [ "$TARGET" != "executor" ] && [ "$TARGET" != "windows" ]; then stop_one "[worker-status]"; fi
           if [ "$TARGET" != "worker" ] && [ "$TARGET" != "windows" ]; then stop_one "[executor-status]"; fi
           if [ "$TARGET" = "windows" ] || [ "$TARGET" = "both" ]; then stop_one "[windows-executor-status]"; fi
+          if [ "$TARGET" = "proxy" ]; then stop_one "[proxy-status]"; fi
