@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>צ'אט מודל על Kaggle</title>
+<title>צ'אט AI · Kaggle</title>
 <style>
 :root{
   --bg:#0f1115; --panel:#161922; --panel2:#1d212c; --line:#2a2f3d; --text:#e8eaf0; --muted:#8b92a5;
@@ -117,15 +117,17 @@ dialog .btns{display:flex;gap:8px;justify-content:flex-start;margin-top:14px}
   <section id="main">
     <div id="top">
       <button id="menu" aria-label="תפריט">☰</button>
-      <span class="grp"><span class="badge" id="workerBadge"><span class="dot"></span><span id="workerText">מודל…</span></span>
+      <span class="grp" id="proxyGroup"><span class="badge" id="proxyBadge"><span class="dot"></span><span id="proxyText">Kaggle API כבוי</span></span><button id="proxyBtn">הפעל Kaggle API</button></span>
+      <span class="grp" id="workerGroup"><span class="badge" id="workerBadge"><span class="dot"></span><span id="workerText">מודל…</span></span>
       <button id="workerBtn">הפעל מודל</button></span>
-      <span class="grp"><span class="badge" id="executorBadge"><span class="dot"></span><span id="executorText">Linux…</span></span>
+      <span class="grp" id="executorGroup"><span class="badge" id="executorBadge"><span class="dot"></span><span id="executorText">Linux…</span></span>
       <button id="executorBtn">הפעל Linux</button></span>
-      <span class="grp"><span class="badge" id="windowsBadge"><span class="dot"></span><span id="windowsText">Windows…</span></span>
+      <span class="grp" id="windowsGroup"><span class="badge" id="windowsBadge"><span class="dot"></span><span id="windowsText">Windows…</span></span>
       <button id="windowsBtn">הפעל Windows</button></span>
       <span class="sp"></span>
       <button id="filesBtn" aria-label="קבצי Linux">📁 Linux</button>
       <button id="windowsFilesBtn" aria-label="קבצי Windows">📁 Windows</button>
+      <a id="engineSwitch" href="proxy.html" style="color:var(--accent);text-decoration:none;white-space:nowrap">צ'אט CPU / API</a>
       <button id="settingsBtn" aria-label="הגדרות">⚙️</button>
     </div>
     <div id="chat"><div class="wrap" id="msgs"></div></div>
@@ -172,11 +174,14 @@ dialog .btns{display:flex;gap:8px;justify-content:flex-start;margin-top:14px}
 
 <script>
 'use strict';
+const PROXY_MODE = new URLSearchParams(location.search).get('engine') === 'proxy';
+const CHAT_LABEL = PROXY_MODE ? 'proxy-chat' : 'chat';
 const MARKER = '<!--llm-reply-->';
 const STREAM_MARKER = '<!--llm-streaming-->';
 const STOP_MARKER = '<!--llm-stop:';
 const KINDS = {
   worker: { title: '[worker-status]', start: 'start-worker.yml', label: 'מודל' },
+  proxy: { title: '[proxy-status]', start: 'start-proxy-worker.yml', label: 'Kaggle API' },
   executor: { title: '[executor-status]', start: 'start-workspace.yml', label: 'Linux' },
   windows: { title: '[windows-executor-status]', start: 'start-windows-workspace.yml', label: 'Windows' },
 };
@@ -456,7 +461,7 @@ function renderIssues() {
 
 async function loadIssues() {
   if (!S.repo) return;
-  const r = await gh('GET', repoPath('/issues?labels=chat&state=open&per_page=50&sort=updated'), null, S.etagI);
+  const r = await gh('GET', repoPath('/issues?labels=' + encodeURIComponent(CHAT_LABEL) + '&state=open&per_page=50&sort=updated'), null, S.etagI);
   if (r.status === 304) return;
   if (r.status !== 200) { toast(r.status === 404 ? 'הריפו לא נמצא (בדוק הגדרות)' : 'שגיאת GitHub ' + r.status); return; }
   S.etagI = r.etag;
@@ -618,7 +623,7 @@ async function send() {
   let cleared = false;
   try {
     if (!S.issue) {
-      const r = await gh('POST', repoPath('/issues'), { title: text.slice(0, 60), body: 'שיחה חדשה מהדף', labels: ['chat'] });
+      const r = await gh('POST', repoPath('/issues'), { title: text.slice(0, 60), body: 'שיחה חדשה מהדף', labels: [CHAT_LABEL] });
       if (r.status !== 201) throw new Error('יצירת שיחה נכשלה (' + r.status + ')');
       S.issue = r.data; S.comments = []; S.etagC = null; S.issues.unshift(r.data);
       store.set('issue', String(r.data.number)); renderIssues();
@@ -667,6 +672,7 @@ function bind() {
   });
   $('#newChat').addEventListener('click', newChat);
   $('#menu').addEventListener('click', () => $('#side').classList.toggle('open'));
+  $('#proxyBtn').addEventListener('click', () => toggle('proxy'));
   $('#workerBtn').addEventListener('click', () => toggle('worker'));
   $('#executorBtn').addEventListener('click', () => toggle('executor'));
   $('#windowsBtn').addEventListener('click', () => toggle('windows'));
@@ -713,6 +719,15 @@ async function slowLoop() {
 
 async function boot() {
   renderStatus(); renderChat(true);
+  $('#proxyGroup').style.display = PROXY_MODE ? '' : 'none';
+  $('#workerGroup').style.display = PROXY_MODE ? 'none' : '';
+  $('#executorGroup').style.display = PROXY_MODE ? 'none' : '';
+  $('#windowsGroup').style.display = PROXY_MODE ? 'none' : '';
+  $('#filesBtn').style.display = PROXY_MODE ? 'none' : '';
+  $('#windowsFilesBtn').style.display = PROXY_MODE ? 'none' : '';
+  $('#engineSwitch').href = PROXY_MODE ? 'index.html' : 'proxy.html';
+  $('#engineSwitch').textContent = PROXY_MODE ? 'צ'אט GPU' : 'צ'אט CPU / API';
+  if (PROXY_MODE) document.title = 'צ'אט Kaggle Model Proxy';
   if (!S.repo || !S.token) { openSettings(); }
   if (!S.repo) return;
   await loadIssues();
