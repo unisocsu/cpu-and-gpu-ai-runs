@@ -234,8 +234,8 @@ def process_issue(issue, env):
 
 def main():
     print("Authenticating to Kaggle Model Proxy…", flush=True)
-    env = run_auth(initial=True)
     ensure_chat_label()
+    env = run_auth(initial=True)
     model = env["MODEL"]
     status = status_issue()
     status_no = status["number"]
