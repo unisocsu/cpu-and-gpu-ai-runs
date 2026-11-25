@@ -45,7 +45,7 @@ Actions → **Run on Kaggle** → כתוב prompt. `max_tokens` הוא גודל 
 
 **הפעלה:** פתח את `https://<משתמש>.github.io/<ריפו>/proxy.html`, השתמש באותו GitHub token של הדף, ולחץ **הפעל Kaggle API**. אפשר לעצור דרך אותו כפתור או Actions → **Stop worker / workspaces** → target `proxy`.
 
-**Secrets נדרשים:** אותם `KAGGLE_USERNAME` ו-`KAGGLE_API_TOKEN` שכבר מוגדרים עבור Kaggle. אין צורך ב-GPU, במחברת Kaggle פעילה או ב-build של llama.cpp. GitHub Actions מספק CPU זמני בלבד; מודל השפה עצמו רץ מאחורי ה-Model Proxy של Kaggle.
+**Secrets נדרשים:** אפשר להשתמש ב-`KAGGLE_API_TOKEN` (טוקן API חדש), או בזוג `KAGGLE_USERNAME` + `KAGGLE_KEY` (Legacy API). לשם תאימות לאחור, ה-workflow מקבל גם `KAGGLE_USER_NAME` במקום `KAGGLE_USERNAME`. אין צורך להגדיר את שתי השיטות; אם מגדירים טוקן וגם Legacy credentials, יש לוודא שהטוקן תקין. אין צורך ב-GPU, במחברת Kaggle פעילה או ב-build של llama.cpp. GitHub Actions מספק CPU זמני בלבד; מודל השפה עצמו רץ מאחורי ה-Model Proxy של Kaggle.
 
 **הערות:** מפתח ה-Model Proxy קצר-חיים ומתחדש אוטומטית כל כ-45 דקות. טוקן מקומי עשוי להיות מורשה רק לתת-קבוצה של המודלים; השתמש ב-`kaggle benchmarks tasks models` וב-`LLMS_AVAILABLE` כדי לבדוק מה זמין. ה-worker פועל עד 345 דקות או עד תום זמן חוסר הפעילות שהוגדר (30 דקות כברירת מחדל). השיחות נשמרות ב-Issues ולכן בריפו ציבורי הן גלויות לציבור.
 
