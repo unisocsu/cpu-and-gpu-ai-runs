@@ -1,0 +1,55 @@
+name: Start Kaggle Model Proxy chat (CPU)
+
+on:
+  workflow_dispatch:
+    inputs:
+      idle_minutes:
+        description: "Minutes without messages before automatic stop"
+        required: false
+        default: "30"
+        type: string
+      max_tokens:
+        description: "Maximum output tokens per answer"
+        required: false
+        default: "4096"
+        type: string
+      system:
+        description: "System prompt"
+        required: false
+        default: "אתה עוזר מועיל. ענה בעברית ברורה."
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: kaggle-model-proxy-chat
+  cancel-in-progress: false
+
+jobs:
+  proxy-chat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install worker dependencies
+        run: |
+          python -m pip install --disable-pip-version-check --upgrade kaggle requests
+          python -m pip install --disable-pip-version-check six
+
+      - name: Run CPU-only Model Proxy chat worker
+        env:
+          KAGGLE_USERNAME: \${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_API_TOKEN: \${{ secrets.KAGGLE_API_TOKEN }}
+          GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: \${{ github.repository }}
+          IDLE_MINUTES: \${{ inputs.idle_minutes }}
+          MAX_TOKENS: \${{ inputs.max_tokens }}
+          PROXY_SYSTEM: \${{ inputs.system }}
+        run: python scripts/proxy_chat_worker.py
