@@ -727,8 +727,8 @@ async function boot() {
   $('#filesBtn').style.display = PROXY_MODE ? 'none' : '';
   $('#windowsFilesBtn').style.display = PROXY_MODE ? 'none' : '';
   $('#engineSwitch').href = PROXY_MODE ? 'index.html' : 'proxy.html';
-  $('#engineSwitch').textContent = PROXY_MODE ? 'צ'אט GPU' : 'צ'אט CPU / API';
-  if (PROXY_MODE) document.title = 'צ'אט Kaggle Model Proxy';
+  $('#engineSwitch').textContent = PROXY_MODE ? "צ'אט GPU" : "צ'אט CPU / API";
+  if (PROXY_MODE) document.title = "צ'אט Kaggle Model Proxy";
   if (!S.repo || !S.token) { openSettings(); }
   if (!S.repo) return;
   await loadIssues();
