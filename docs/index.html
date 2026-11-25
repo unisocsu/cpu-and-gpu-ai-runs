@@ -546,7 +546,8 @@ async function toggle(kind) {
     const target = kind === 'windows' ? 'windows' : kind;
     if (await dispatch('stop-worker.yml', { target })) toast('בקשת עצירה נשלחה (תיענה תוך כדקה)');
   } else if (await dispatch(KINDS[kind].start)) {
-    toast(kind === 'worker' ? 'ההפעלה נשלחה. לוקח בערך 4-6 דקות עד שהמודל מוכן.' :
+    toast(kind === 'proxy' ? 'הפעלת Kaggle Model Proxy נשלחה. ה-worker מאמת את החשבון ומתחבר ל-API.' :
+      kind === 'worker' ? 'ההפעלה נשלחה. לוקח בערך 4-6 דקות עד שהמודל מוכן.' :
       kind === 'windows' ? 'הפעלת Windows Workspace נשלחה. ה-runner בודק הרשאות Administrator.' :
       'הפעלת Linux Workspace נשלחה. לוקח בערך דקה-שתיים.');
     S.fast = Date.now() + 10 * 60 * 1000;
