@@ -205,7 +205,7 @@ const S = {
   token: store.get('token', ''),
   issue: null, issues: [], comments: [], pending: [],
   etagC: null, etagI: null, lastKey: '',
-  st: { worker: { no: null, state: '', ts: 0, online: false }, executor: { no: null, state: '', ts: 0, online: false }, windows: { no: null, state: '', ts: 0, online: false } },
+  st: { proxy: { no: null, state: '', ts: 0, online: false }, worker: { no: null, state: '', ts: 0, online: false }, executor: { no: null, state: '', ts: 0, online: false }, windows: { no: null, state: '', ts: 0, online: false } },
   sending: false, stopping: false, thinking: store.get('thinking', '0') === '1', branch: null, timer: null,
 };
 const owner = () => (S.repo.split('/')[0] || '');
@@ -692,7 +692,7 @@ function bind() {
     S.repo = $('#repoIn').value.trim().replace(/^https?:\/\/github\.com\//, '').replace(/\/$/, '');
     S.token = $('#tokenIn').value.trim();
     store.set('repo', S.repo); store.set('token', S.token);
-    S.st = { worker: { no: null, state: '', ts: 0, online: false }, executor: { no: null, state: '', ts: 0, online: false }, windows: { no: null, state: '', ts: 0, online: false } }; S.branch = null; S.etagI = null;
+    S.st = { proxy: { no: null, state: '', ts: 0, online: false }, worker: { no: null, state: '', ts: 0, online: false }, executor: { no: null, state: '', ts: 0, online: false }, windows: { no: null, state: '', ts: 0, online: false } }; S.branch = null; S.etagI = null;
     closeSettings(); newChat(); boot();
   });
 }
