@@ -179,7 +179,9 @@ def generate(env, model, messages, issue_no):
     reply = comment(issue_no, STREAM)
     reply_id = reply["id"]
     try:
-        for raw in r.iter_lines(decode_unicode=True):
+        for raw in r.iter_lines():
+            if isinstance(raw, bytes):
+                raw = raw.decode("utf-8", "replace")
             if not raw or not raw.startswith("data:"):
                 continue
             data = raw[5:].strip()
