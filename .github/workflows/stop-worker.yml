@@ -34,7 +34,7 @@ jobs:
             gh api -X PATCH "repos/$REPO/issues/$n" -f body="$body" > /dev/null
             echo "$title: stop requested (#$n)"
           }
-          if [ "$TARGET" != "executor" ] && [ "$TARGET" != "windows" ]; then stop_one "[worker-status]"; fi
-          if [ "$TARGET" != "worker" ] && [ "$TARGET" != "windows" ]; then stop_one "[executor-status]"; fi
+          if [ "$TARGET" = "worker" ] || [ "$TARGET" = "both" ]; then stop_one "[worker-status]"; fi
+          if [ "$TARGET" = "executor" ] || [ "$TARGET" = "both" ]; then stop_one "[executor-status]"; fi
           if [ "$TARGET" = "windows" ] || [ "$TARGET" = "both" ]; then stop_one "[windows-executor-status]"; fi
           if [ "$TARGET" = "proxy" ]; then stop_one "[proxy-status]"; fi
