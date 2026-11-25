@@ -45,11 +45,17 @@ jobs:
 
       - name: Run CPU-only Model Proxy chat worker
         env:
-          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME || secrets.KAGGLE_USER_NAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
           KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           IDLE_MINUTES: ${{ inputs.idle_minutes }}
           MAX_TOKENS: ${{ inputs.max_tokens }}
           PROXY_SYSTEM: ${{ inputs.system }}
-        run: python scripts/proxy_chat_worker.py
+        run: |
+          if [ -z "$KAGGLE_API_TOKEN" ] && { [ -z "$KAGGLE_USERNAME" ] || [ -z "$KAGGLE_KEY" ]; }; then
+            echo "::error::Missing Kaggle credentials. Set KAGGLE_API_TOKEN, or set both KAGGLE_USERNAME (or legacy KAGGLE_USER_NAME) and KAGGLE_KEY."
+            exit 1
+          fi
+          python scripts/proxy_chat_worker.py
