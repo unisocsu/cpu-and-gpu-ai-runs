@@ -78,6 +78,14 @@ def proxy_url(env):
     return env["MODEL_PROXY_URL"].rstrip("/") + "/openapi/v1/chat/completions"
 
 
+def ensure_chat_label():
+    labels = gh_call("GET", f"/repos/{REPO}/labels?per_page=100")
+    if not any(x.get("name") == CHAT_LABEL for x in labels):
+        gh_call("POST", f"/repos/{REPO}/labels",
+                json={"name": CHAT_LABEL, "color": "6f42c1",
+                      "description": "Messages handled by the Kaggle Model Proxy CPU worker"})
+
+
 def status_issue():
     issues = gh_call("GET", f"/repos/{REPO}/issues?state=open&per_page=100")
     for item in issues:
@@ -227,6 +235,7 @@ def process_issue(issue, env):
 def main():
     print("Authenticating to Kaggle Model Proxy…", flush=True)
     env = run_auth(initial=True)
+    ensure_chat_label()
     model = env["MODEL"]
     status = status_issue()
     status_no = status["number"]
