@@ -34,6 +34,21 @@ Actions → **Run on Kaggle** → כתוב prompt. `max_tokens` הוא גודל 
 
 אפשר גם לכתוב ישירות תגובה ב-Issue עם התווית `chat` (למשל מאפליקציית GitHub בטלפון).
 
+### צ'אט דרך Kaggle Model Proxy (CPU בלבד)
+
+מצב צ'אט נוסף שמבוסס על **Kaggle Model Proxy** במקום טעינת מודל על GPU:
+- GitHub Pages ממשיך להשתמש ב-Issues כערוץ הודעות, עם תווית נפרדת `proxy-chat` כדי שה-worker הזה לא יתנגש בצ'אט ה-GPU.
+- GitHub Actions מריץ worker על `ubuntu-latest` ללא GPU. הוא מקבל הודעות מ-Issues, שולח אותן ל-Kaggle Model Proxy ומעדכן תגובת Issue בהדרגה.
+- ה-worker מבצע `kaggle benchmarks init` כדי לקבל כתובת API, מפתח קצר-חיים ורשימת מודלים זמינים. הוא מחדש את האימות במהלך סשן ארוך.
+- ברירת המחדל היא המודל שמוגדר ב-`LLM_DEFAULT` על ידי Kaggle. אפשר לבחור מודל להודעה בודדת באמצעות `/model anthropic/claude-sonnet-4` (או slug אחר שמופיע ברשימת המודלים שהוקצתה לחשבון).
+- אפשר לבדוק את המכסה והיתרה עם `kaggle benchmarks quota`; המכסה עשויה להשתנות בין חשבונות ותקופות. זו מכסת Model Proxy נפרדת משעות GPU/TPU.
+
+**הפעלה:** פתח את `https://<משתמש>.github.io/<ריפו>/proxy.html`, השתמש באותו GitHub token של הדף, ולחץ **הפעל Kaggle API**. אפשר לעצור דרך אותו כפתור או Actions → **Stop worker / workspaces** → target `proxy`.
+
+**Secrets נדרשים:** אותם `KAGGLE_USERNAME` ו-`KAGGLE_API_TOKEN` שכבר מוגדרים עבור Kaggle. אין צורך ב-GPU, במחברת Kaggle פעילה או ב-build של llama.cpp. GitHub Actions מספק CPU זמני בלבד; מודל השפה עצמו רץ מאחורי ה-Model Proxy של Kaggle.
+
+**הערות:** מפתח ה-Model Proxy קצר-חיים ומתחדש אוטומטית כל כ-45 דקות. טוקן מקומי עשוי להיות מורשה רק לתת-קבוצה של המודלים; השתמש ב-`kaggle benchmarks tasks models` וב-`LLMS_AVAILABLE` כדי לבדוק מה זמין. ה-worker פועל עד 345 דקות או עד תום זמן חוסר הפעילות שהוגדר (30 דקות כברירת מחדל). השיחות נשמרות ב-Issues ולכן בריפו ציבורי הן גלויות לציבור.
+
 ### סביבת עבודה (vibe coding)
 1. בדף לחץ **הפעל סביבה** (או Actions → **Start workspace (executor)**). לוקח כדקה.
 2. כשגם "סביבה מחובר", המודל מקבל שלושה כלים: `bash`, `write_file`, `read_file`, ומריץ אותם בלולאה (עד 15 צעדים להודעה): כותב קבצים, מריץ, רואה שגיאות ומתקן.
