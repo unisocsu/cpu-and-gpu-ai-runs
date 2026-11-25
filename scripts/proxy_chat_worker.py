@@ -174,7 +174,7 @@ def requested_model(body, default):
     return m.group(1) if m else default
 
 
-def generate(env, model, messages, issue_no):
+def generate(env, model, messages, issue_no, status_no):
     url = proxy_url(env)
     headers = proxy_headers(env)
     payload = {"model": model, "messages": messages, "max_tokens": MAX_TOKENS, "stream": True}
@@ -185,6 +185,7 @@ def generate(env, model, messages, issue_no):
         raise RuntimeError(f"Kaggle Model Proxy HTTP {r.status_code}: {detail}")
     answer = ""
     last_edit = time.monotonic()
+    last_status = time.monotonic()
     reply = comment(issue_no, STREAM)
     reply_id = reply["id"]
     try:
@@ -210,6 +211,9 @@ def generate(env, model, messages, issue_no):
                 if time.monotonic() - last_edit >= 0.8 or len(answer) < 100:
                     edit_comment(issue_no, reply_id, STREAM + answer[-60000:])
                     last_edit = time.monotonic()
+            if time.monotonic() - last_status >= 30:
+                set_status(status_no, "online", model, "Generating response")
+                last_status = time.monotonic()
         if not answer.strip():
             raise RuntimeError("Kaggle Model Proxy החזיר תשובה ריקה.")
         edit_comment(issue_no, reply_id, REPLY + answer[-60000:])
@@ -217,7 +221,7 @@ def generate(env, model, messages, issue_no):
         r.close()
 
 
-def process_issue(issue, env):
+def process_issue(issue, env, status_no):
     comments = get_comments(issue["number"])
     target = pending_comment(comments)
     if not target:
@@ -226,7 +230,7 @@ def process_issue(issue, env):
     model = requested_model(body, env["MODEL"])
     messages = build_messages(comments, target, SYSTEM)
     try:
-        generate(env, model, messages, issue["number"])
+        generate(env, model, messages, issue["number"], status_no)
     except Exception as e:
         # Keep the same marker the UI recognizes so the error appears as an assistant reply.
         comment(issue["number"], REPLY + "⚠️ שגיאה בקריאה ל-Kaggle Model Proxy:\n\n" + str(e)[:3500])
@@ -266,7 +270,7 @@ def main():
             for issue in list_chat_issues():
                 if issue.get("pull_request") or (issue.get("user") or {}).get("login", "").lower() != OWNER.lower():
                     continue
-                if process_issue(issue, env):
+                if process_issue(issue, env, status_no):
                     did_work = True
                     last_activity = time.monotonic()
             if time.monotonic() - last_activity > IDLE_MINUTES * 60:
