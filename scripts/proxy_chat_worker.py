@@ -17,6 +17,7 @@ GH_TOKEN = os.environ["GH_TOKEN"]
 KAGGLE_ENV = Path(os.environ.get("RUNNER_TEMP", "/tmp")) / "kaggle-model-proxy.env"
 STATUS_TITLE = "[proxy-status]"
 CHAT_LABEL = "proxy-chat"
+BOT = "github-actions[bot]"
 REPLY = "<!--llm-reply-->"
 STREAM = "<!--llm-streaming-->"
 STOP = "<!--llm-stop:"
@@ -128,7 +129,7 @@ def pending_comment(comments):
         body = c.get("body") or ""
         if is_owner_comment(c) and not body.startswith(STOP):
             pending = c
-        elif body.startswith(REPLY):
+        elif body.startswith(REPLY) and (c.get("user") or {}).get("login", "") == BOT:
             pending = None
     return pending
 
@@ -155,7 +156,7 @@ def build_messages(comments, target, system):
                 body = body.split("\n", 1)[-1] if "\n" in body else ""
             if body.strip():
                 messages.append({"role": "user", "content": body.strip()})
-        elif body.startswith(REPLY):
+        elif body.startswith(REPLY) and (c.get("user") or {}).get("login", "") == BOT:
             text = body[len(REPLY):].strip()
             text = re.sub(r"\n*<sub>[\s\S]*?</sub>\s*$", "", text)
             text = re.sub(r"<details><summary>[\s\S]*?</summary>[\s\S]*?</details>", "", text).strip()
