@@ -45,11 +45,11 @@ jobs:
 
       - name: Run CPU-only Model Proxy chat worker
         env:
-          KAGGLE_USERNAME: \${{ secrets.KAGGLE_USERNAME }}
-          KAGGLE_API_TOKEN: \${{ secrets.KAGGLE_API_TOKEN }}
-          GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: \${{ github.repository }}
-          IDLE_MINUTES: \${{ inputs.idle_minutes }}
-          MAX_TOKENS: \${{ inputs.max_tokens }}
-          PROXY_SYSTEM: \${{ inputs.system }}
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          IDLE_MINUTES: ${{ inputs.idle_minutes }}
+          MAX_TOKENS: ${{ inputs.max_tokens }}
+          PROXY_SYSTEM: ${{ inputs.system }}
         run: python scripts/proxy_chat_worker.py
