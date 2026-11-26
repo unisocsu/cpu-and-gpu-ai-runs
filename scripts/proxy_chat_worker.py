@@ -54,15 +54,13 @@ def run_auth(initial=False):
     cmd = ["kaggle", "benchmarks", "init", "-y", "--env-file", str(KAGGLE_ENV),
            "--example-file", str(KAGGLE_ENV.parent / "proxy_example_task.py")] if initial else [
            "kaggle", "benchmarks", "auth", "-y", "--env-file", str(KAGGLE_ENV)]
-    # Prefer the legacy username + API key pair when both are configured.
-    # The Kaggle CLI gives KAGGLE_API_TOKEN precedence, which can mask a valid
-    # username/key pair with an unrelated or stale token.
+    # Prefer the Kaggle API token when present. Fall back to the legacy
+    # username + API key pair only when no API token is configured.
     cli_env = os.environ.copy()
-    if cli_env.get("KAGGLE_USERNAME") and cli_env.get("KAGGLE_KEY"):
-        cli_env.pop("KAGGLE_API_TOKEN", None)
-        print("Kaggle CLI auth mode: username + key (API token ignored for this call).", flush=True)
-    elif cli_env.get("KAGGLE_API_TOKEN"):
+    if cli_env.get("KAGGLE_API_TOKEN"):
         print("Kaggle CLI auth mode: API token.", flush=True)
+    elif cli_env.get("KAGGLE_USERNAME") and cli_env.get("KAGGLE_KEY"):
+        print("Kaggle CLI auth mode: username + key.", flush=True)
     else:
         raise RuntimeError("Missing Kaggle credentials: configure KAGGLE_API_TOKEN or both KAGGLE_USERNAME and KAGGLE_KEY.")
     p = subprocess.run(cmd, text=True, capture_output=True, timeout=180, env=cli_env)
